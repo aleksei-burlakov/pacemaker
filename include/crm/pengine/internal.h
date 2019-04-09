@@ -97,11 +97,11 @@ gboolean group_active(resource_t * rsc, gboolean all);
 gboolean clone_active(resource_t * rsc, gboolean all);
 gboolean pe__bundle_active(pe_resource_t *rsc, gboolean all);
 
-void native_print(resource_t * rsc, const char *pre_text, long options, void *print_data);
-void group_print(resource_t * rsc, const char *pre_text, long options, void *print_data);
-void clone_print(resource_t * rsc, const char *pre_text, long options, void *print_data);
+void native_print(resource_t * rsc, const char *pre_text, long options, void *print_data, pcmk__output_t* out);
+void group_print(resource_t * rsc, const char *pre_text, long options, void *print_data, pcmk__output_t* out);
+void clone_print(resource_t * rsc, const char *pre_text, long options, void *print_data, pcmk__output_t* out);
 void pe__print_bundle(pe_resource_t *rsc, const char *pre_text, long options,
-                      void *print_data);
+                      void *print_data, pcmk__output_t* out);
 
 void native_free(resource_t * rsc);
 void group_free(resource_t * rsc);

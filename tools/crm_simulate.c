@@ -189,7 +189,7 @@ print_cluster_status(pe_working_set_t * data_set, long options)
             && rsc->role == RSC_ROLE_STOPPED) {
             continue;
         }
-        rsc->fns->print(rsc, NULL, pe_print_printf | options, stdout);
+        rsc->fns->print(rsc, NULL, pe_print_printf | options, stdout, NULL);
     }
     fprintf(stdout, "\n");
 }

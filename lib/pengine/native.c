@@ -422,7 +422,7 @@ native_displayable_state(resource_t *rsc, long options)
 }
 
 static void
-native_print_xml(resource_t * rsc, const char *pre_text, long options, void *print_data)
+native_print_xml(resource_t * rsc, const char *pre_text, long options, void *print_data, pcmk__output_t* out)
 {
     const char *class = crm_element_value(rsc->xml, XML_AGENT_ATTR_CLASS);
     const char *prov = crm_element_value(rsc->xml, XML_AGENT_ATTR_PROVIDER);
@@ -430,62 +430,118 @@ native_print_xml(resource_t * rsc, const char *pre_text, long options, void *pri
     const char *target_role = NULL;
 
     /* resource information. */
-    status_print("%s<resource ", pre_text);
-    status_print("id=\"%s\" ", rsc_printable_id(rsc));
-    status_print("resource_agent=\"%s%s%s:%s\" ",
-                 class,
-                 prov ? "::" : "", prov ? prov : "", crm_element_value(rsc->xml, XML_ATTR_TYPE));
-
-    status_print("role=\"%s\" ", rsc_state);
-    if (rsc->meta) {
-        target_role = g_hash_table_lookup(rsc->meta, XML_RSC_ATTR_TARGET_ROLE);
-    }
-    if (target_role) {
-        status_print("target_role=\"%s\" ", target_role);
-    }
-    status_print("active=\"%s\" ", rsc->fns->active(rsc, TRUE) ? "true" : "false");
-    status_print("orphaned=\"%s\" ", is_set(rsc->flags, pe_rsc_orphan) ? "true" : "false");
-    status_print("blocked=\"%s\" ", is_set(rsc->flags, pe_rsc_block) ? "true" : "false");
-    status_print("managed=\"%s\" ", is_set(rsc->flags, pe_rsc_managed) ? "true" : "false");
-    status_print("failed=\"%s\" ", is_set(rsc->flags, pe_rsc_failed) ? "true" : "false");
-    status_print("failure_ignored=\"%s\" ",
-                 is_set(rsc->flags, pe_rsc_failure_ignored) ? "true" : "false");
-    status_print("nodes_running_on=\"%d\" ", g_list_length(rsc->running_on));
-
-    if (options & pe_print_pending) {
-        const char *pending_task = native_pending_task(rsc);
-
-        if (pending_task) {
-            status_print("pending=\"%s\" ", pending_task);
+    if (out) {
+        char ra_name[70];
+        out->begin_list(out, "resource", NULL, NULL);
+        out->set_str_prop(out, "id", rsc_printable_id(rsc));
+        sprintf(ra_name, "%s%s%s:%s", class, prov ? "::" : "", prov ? prov : ""
+            , crm_element_value(rsc->xml, XML_ATTR_TYPE));
+        out->set_str_prop(out, "resource_agent", ra_name);
+        out->set_str_prop(out, "role", rsc_state);
+        if (rsc->meta) {
+            target_role = g_hash_table_lookup(rsc->meta, XML_RSC_ATTR_TARGET_ROLE);
         }
-    }
-
-    if (options & pe_print_dev) {
-        status_print("provisional=\"%s\" ",
-                     is_set(rsc->flags, pe_rsc_provisional) ? "true" : "false");
-        status_print("runnable=\"%s\" ", is_set(rsc->flags, pe_rsc_runnable) ? "true" : "false");
-        status_print("priority=\"%f\" ", (double)rsc->priority);
-        status_print("variant=\"%s\" ", crm_element_name(rsc->xml));
-    }
-
-    /* print out the nodes this resource is running on */
-    if (options & pe_print_rsconly) {
-        status_print("/>\n");
-        /* do nothing */
-    } else if (rsc->running_on != NULL) {
-        GListPtr gIter = rsc->running_on;
-
-        status_print(">\n");
-        for (; gIter != NULL; gIter = gIter->next) {
-            node_t *node = (node_t *) gIter->data;
-
-            status_print("%s    <node name=\"%s\" id=\"%s\" cached=\"%s\"/>\n", pre_text,
-                         node->details->uname, node->details->id,
-                         node->details->online ? "false" : "true");
+        if (target_role) {
+            out->set_str_prop(out, "target_role", target_role);
         }
-        status_print("%s</resource>\n", pre_text);
+        out->set_bool_prop(out, "active ", rsc->fns->active(rsc, TRUE));
+        out->set_bool_prop(out, "orphaned", is_set(rsc->flags, pe_rsc_orphan));
+        out->set_bool_prop(out, "blocked", is_set(rsc->flags, pe_rsc_block));
+        out->set_bool_prop(out, "managed", is_set(rsc->flags, pe_rsc_managed));
+        out->set_bool_prop(out, "failed", is_set(rsc->flags, pe_rsc_failed));
+        out->set_bool_prop(out, "failure_ignored", is_set(rsc->flags, pe_rsc_failure_ignored));
+        out->set_int_prop(out, "nodes_running_on", g_list_length(rsc->running_on));
+
+        if (options & pe_print_pending) {
+            const char *pending_task = native_pending_task(rsc);
+
+            if (pending_task) {
+                out->set_str_prop(out, "pending", pending_task);
+            }
+        }
+
+        if (options & pe_print_dev) {
+            out->set_bool_prop(out, "provisional", is_set(rsc->flags, pe_rsc_provisional));
+            out->set_bool_prop(out, "runnable", is_set(rsc->flags, pe_rsc_runnable));
+            out->set_float_prop(out, "priority", (double)rsc->priority);
+            out->set_str_prop(out, "variant", crm_element_name(rsc->xml));
+        }
+
+        /* print out the nodes this resource is running on */
+        if (options & pe_print_rsconly) {
+            /* do nothing */
+        } else if (rsc->running_on != NULL) {
+            GListPtr gIter = rsc->running_on;
+
+            for (; gIter != NULL; gIter = gIter->next) {
+                node_t *node = (node_t *) gIter->data;
+
+                out->list_item(out, "node", NULL);
+                out->set_str_prop(out, "node_name", node->details->uname);
+                out->set_str_prop(out, "id", node->details->id);
+                out->set_bool_prop(out, "cached", node->details->online);
+            }
+        }
+
+        out->end_list(out);
     } else {
-        status_print("/>\n");
+        status_print("%s<resource ", pre_text);
+        status_print("id=\"%s\" ", rsc_printable_id(rsc));
+        status_print("resource_agent=\"%s%s%s:%s\" ",
+                     class,
+                     prov ? "::" : "", prov ? prov : "", crm_element_value(rsc->xml, XML_ATTR_TYPE));
+
+        status_print("role=\"%s\" ", rsc_state);
+        if (rsc->meta) {
+            target_role = g_hash_table_lookup(rsc->meta, XML_RSC_ATTR_TARGET_ROLE);
+        }
+        if (target_role) {
+            status_print("target_role=\"%s\" ", target_role);
+        }
+        status_print("active=\"%s\" ", rsc->fns->active(rsc, TRUE) ? "true" : "false");
+        status_print("orphaned=\"%s\" ", is_set(rsc->flags, pe_rsc_orphan) ? "true" : "false");
+        status_print("blocked=\"%s\" ", is_set(rsc->flags, pe_rsc_block) ? "true" : "false");
+        status_print("managed=\"%s\" ", is_set(rsc->flags, pe_rsc_managed) ? "true" : "false");
+        status_print("failed=\"%s\" ", is_set(rsc->flags, pe_rsc_failed) ? "true" : "false");
+        status_print("failure_ignored=\"%s\" ",
+                     is_set(rsc->flags, pe_rsc_failure_ignored) ? "true" : "false");
+        status_print("nodes_running_on=\"%d\" ", g_list_length(rsc->running_on));
+
+        if (options & pe_print_pending) {
+            const char *pending_task = native_pending_task(rsc);
+
+            if (pending_task) {
+                status_print("pending=\"%s\" ", pending_task);
+            }
+        }
+
+        if (options & pe_print_dev) {
+            status_print("provisional=\"%s\" ",
+                         is_set(rsc->flags, pe_rsc_provisional) ? "true" : "false");
+            status_print("runnable=\"%s\" ", is_set(rsc->flags, pe_rsc_runnable) ? "true" : "false");
+            status_print("priority=\"%f\" ", (double)rsc->priority);
+            status_print("variant=\"%s\" ", crm_element_name(rsc->xml));
+        }
+
+        /* print out the nodes this resource is running on */
+        if (options & pe_print_rsconly) {
+            status_print("/>\n");
+            /* do nothing */
+        } else if (rsc->running_on != NULL) {
+            GListPtr gIter = rsc->running_on;
+
+            status_print(">\n");
+            for (; gIter != NULL; gIter = gIter->next) {
+                node_t *node = (node_t *) gIter->data;
+
+                status_print("%s    <node name=\"%s\" id=\"%s\" cached=\"%s\"/>\n", pre_text,
+                             node->details->uname, node->details->id,
+                             node->details->online ? "false" : "true");
+            }
+            status_print("%s</resource>\n", pre_text);
+        } else {
+            status_print("/>\n");
+        }
     }
 }
 
@@ -529,7 +585,7 @@ common_print(resource_t * rsc, const char *pre_text, const char *name, node_t *n
     }
 
     if (options & pe_print_xml) {
-        native_print_xml(rsc, pre_text, options, print_data);
+        native_print_xml(rsc, pre_text, options, print_data, NULL);
         return;
     }
 
@@ -747,13 +803,13 @@ common_print(resource_t * rsc, const char *pre_text, const char *name, node_t *n
 }
 
 void
-native_print(resource_t * rsc, const char *pre_text, long options, void *print_data)
+native_print(resource_t * rsc, const char *pre_text, long options, void *print_data, pcmk__output_t* out)
 {
     node_t *node = NULL;
 
     CRM_ASSERT(rsc->variant == pe_native);
     if (options & pe_print_xml) {
-        native_print_xml(rsc, pre_text, options, print_data);
+        native_print_xml(rsc, pre_text, options, print_data, out);
         return;
     }
 

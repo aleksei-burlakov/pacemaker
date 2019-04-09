@@ -1306,7 +1306,7 @@ print_resource(int log_level, const char *pre_text, resource_t * rsc, gboolean d
     if (details) {
         options |= pe_print_details;
     }
-    rsc->fns->print(rsc, pre_text, options, &log_level);
+    rsc->fns->print(rsc, pre_text, options, &log_level, NULL);
 }
 
 void

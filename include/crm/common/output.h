@@ -338,6 +338,38 @@ struct pcmk__output_s {
      * \param[in,out] out The output functions structure.
      */
     void (*end_list) (pcmk__output_t *out);
+
+    /*!
+     * \internal
+     * \brief Set a string attribute to the last added item (eg. tag).
+     *
+     * \param[in,out] out The output functions structure.
+     */
+    void (*set_str_prop) (pcmk__output_t *out, const char *id, const char *value);
+
+    /*!
+     * \internal
+     * \brief Set an integer attribute to the last added item (eg. tag).
+     *
+     * \param[in,out] out The output functions structure.
+     */
+    void (*set_int_prop) (pcmk__output_t *out, const char *id, int value);
+
+    /*!
+     * \internal
+     * \brief Set a float attribute to the last added item (eg. tag).
+     *
+     * \param[in,out] out The output functions structure.
+     */
+    void (*set_float_prop) (pcmk__output_t *out, const char *id, double value);
+
+    /*!
+     * \internal
+     * \brief Set a boolean attribute to the last added item (eg. tag).
+     *
+     * \param[in,out] out The output functions structure.
+     */
+    void (*set_bool_prop) (pcmk__output_t *out, const char *id, int condition);
 };
 
 /*!
