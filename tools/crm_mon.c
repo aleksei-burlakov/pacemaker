@@ -1087,7 +1087,15 @@ print_nvpair(FILE *stream, const char *name, const char *value,
 
             case mon_output_html:
             case mon_output_cgi:
-                fprintf(stream, "%s%s", value, (units? units : ""));
+                if (out) {
+                    char date_str[70];
+                    sprintf(date_str, "%s%s", value, (units? units : ""));
+                    /* FIXME! it might be incorrect.
+                     * It could be not an XML property, but a text field */
+                    out->set_str_prop(out, name, date_str);
+                } else {
+                    fprintf(stream, "%s%s", value, (units? units : ""));
+                }
                 break;
 
             case mon_output_xml:
@@ -1125,6 +1133,7 @@ print_nvpair(FILE *stream, const char *name, const char *value,
             case mon_output_cgi:
             case mon_output_xml:
                 if (out) {
+                    // FIXME! It might be incorrect for XML and CGI
                     out->set_str_prop(out, name, date_str);
                 } else {
                     fprintf(stream, "\"%s\"", date_str);
@@ -1160,7 +1169,14 @@ print_node_start(FILE *stream, node_t *node, pcmk__output_t *out)
         case mon_output_html:
         case mon_output_cgi:
             node_name = get_node_display_name(node);
-            fprintf(stream, "  <h3>Node: %s</h3>\n  <ul>\n", node_name);
+            if (out) {
+                char str[30];
+                sprintf(str, "Node: %s", node_name);
+                out->list_item(out, "h3", str);
+                out->begin_list(out, "ul", NULL, NULL);
+            } else {
+                fprintf(stream, "  <h3>Node: %s</h3>\n  <ul>\n", node_name);
+            }
             free(node_name);
             break;
 
@@ -1187,6 +1203,10 @@ print_node_start(FILE *stream, node_t *node, pcmk__output_t *out)
 static void
 print_node_end(FILE *stream, pcmk__output_t *out)
 {
+    if (out) {
+        out->end_list(out);
+        return;
+    }
     switch (output_format) {
         case mon_output_html:
         case mon_output_cgi:
@@ -1194,11 +1214,7 @@ print_node_end(FILE *stream, pcmk__output_t *out)
             break;
 
         case mon_output_xml:
-            if (out) {
-                out->end_list(out);
-            } else {
-                fprintf(stream, "        </node>\n");
-            }
+            fprintf(stream, "        </node>\n");
             break;
 
         default:
@@ -1238,7 +1254,12 @@ print_resources_heading(FILE *stream, pcmk__output_t *out)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <hr />\n <h2>%s</h2>\n", heading);
+            if (out) {
+                out->list_item(out, "hr", NULL);
+                out->list_item(out, "h2", heading);
+            } else {
+                fprintf(stream, " <hr />\n <h2>%s</h2>\n", heading);
+            }
             break;
 
         case mon_output_xml:
@@ -1252,7 +1273,6 @@ print_resources_heading(FILE *stream, pcmk__output_t *out)
         default:
             break;
     }
-
 }
 
 /*!
@@ -1286,7 +1306,14 @@ print_resources_closing(FILE *stream, gboolean printed_heading, pcmk__output_t *
         case mon_output_html:
         case mon_output_cgi:
             if (!printed_heading) {
-                fprintf(stream, " <hr />\n <h2>No %sresources</h2>\n", heading);
+                if (out) {
+                    char sresources[50];
+                    sprintf(sresources, "No %sresources", heading);
+                    out->list_item(out, "hr", NULL);
+                    out->list_item(out, "h2", sresources);
+                } else {
+                    fprintf(stream, " <hr />\n <h2>No %sresources</h2>\n", heading);
+                }
             }
             break;
 
@@ -1416,7 +1443,14 @@ print_rsc_history_start(FILE *stream, pe_working_set_t *data_set, node_t *node,
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, "   <li>%s:", rsc_id);
+            if (out) {
+                char str[20];
+                out->begin_list(out, "li", NULL, NULL);
+                sprintf(str, "%s:", rsc_id);
+                out->list_item(out, NULL, str);
+            } else {
+                fprintf(stream, "   <li>%s:", rsc_id);
+            }
             break;
 
         case mon_output_xml:
@@ -1442,7 +1476,11 @@ print_rsc_history_start(FILE *stream, pe_working_set_t *data_set, node_t *node,
 
             case mon_output_html:
             case mon_output_cgi:
-                fprintf(stream, " orphan");
+                if (out) {
+                    out->list_item(out, NULL, "orphan");
+                } else {
+                    fprintf(stream, " orphan");
+                }
                 break;
 
             case mon_output_xml:
@@ -1469,7 +1507,13 @@ print_rsc_history_start(FILE *stream, pe_working_set_t *data_set, node_t *node,
 
             case mon_output_html:
             case mon_output_cgi:
-                fprintf(stream, " migration-threshold=%d", rsc->migration_threshold);
+                if (out) {
+                    char str[50];
+                    sprintf(str, "migration-threshold=%d", rsc->migration_threshold);
+                    out->list_item(out, str, NULL);
+                } else {
+                    fprintf(stream, " migration-threshold=%d", rsc->migration_threshold);
+                }
                 break;
 
             case mon_output_xml:
@@ -1496,7 +1540,13 @@ print_rsc_history_start(FILE *stream, pe_working_set_t *data_set, node_t *node,
 
                 case mon_output_html:
                 case mon_output_cgi:
-                    fprintf(stream, " " CRM_FAIL_COUNT_PREFIX "=%d", failcount);
+                    if (out) {
+                        char str[50];
+                        sprintf(str, " " CRM_FAIL_COUNT_PREFIX "=%d", failcount);
+                        out->list_item(out, NULL, str);
+                    } else {
+                        fprintf(stream, " " CRM_FAIL_COUNT_PREFIX "=%d", failcount);
+                    }
                     break;
 
                 case mon_output_xml:
@@ -1529,6 +1579,7 @@ print_rsc_history_start(FILE *stream, pe_working_set_t *data_set, node_t *node,
 
         case mon_output_html:
         case mon_output_cgi:
+            out->end_list(out);
             fprintf(stream, "\n    <ul>\n");
             break;
 
@@ -1557,7 +1608,12 @@ print_rsc_history_end(FILE *stream, pcmk__output_t *out)
     switch (output_format) {
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, "    </ul>\n   </li>\n");
+            if (out) {
+                out->end_list(out);
+                out->end_list(out);
+            } else {
+                fprintf(stream, "    </ul>\n   </li>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -1602,7 +1658,14 @@ print_op_history(FILE *stream, pe_working_set_t *data_set, node_t *node,
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, "     <li>(%s) %s:", call, task);
+            if (out) {
+                char str[50];
+                sprintf(str, "(%s) %s:", call, task);
+                out->begin_list(out, "li", NULL, NULL);
+                out->list_item(out, NULL, str);
+            } else {
+                fprintf(stream, "     <li>(%s) %s:", call, task);
+            }
             break;
 
         case mon_output_xml:
@@ -1668,7 +1731,14 @@ print_op_history(FILE *stream, pe_working_set_t *data_set, node_t *node,
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " rc=%d (%s)</li>\n", rc, services_ocf_exitcode_str(rc));
+            if (out) {
+                char str[50];
+                sprintf(str, "rc=%d (%s)", rc, services_ocf_exitcode_str(rc));
+                out->list_item(out, NULL, str);
+                out->end_list(out);
+            } else {
+                fprintf(stream, " rc=%d (%s)</li>\n", rc, services_ocf_exitcode_str(rc));
+            }
             break;
 
         case mon_output_xml:
@@ -1860,11 +1930,21 @@ print_attr_msg(FILE *stream, node_t * node, GListPtr rsc_list, const char *attrn
 
                     case mon_output_html:
                     case mon_output_cgi:
-                        if (value <= 0) {
-                            fprintf(stream, " <b>(connectivity is lost)</b>");
-                        } else if (value < expected_score) {
-                            fprintf(stream, " <b>(connectivity is degraded -- expected %d)</b>",
-                                    expected_score);
+                        if (out) {
+                            if (value <= 0) {
+                                out->list_item(out, "b", "(connectivity is lost)");
+                            } else if (value < expected_score) {
+                                char str[20];
+                                sprintf(str, "(connectivity is degraded -- expected %d)", expected_score);
+                                out->list_item(out, "b", str);
+                            }
+                        } else {   
+                            if (value <= 0) {
+                                fprintf(stream, " <b>(connectivity is lost)</b>");
+                            } else if (value < expected_score) {
+                                fprintf(stream, " <b>(connectivity is degraded -- expected %d)</b>",
+                                        expected_score);
+                            }
                         }
                         break;
 
@@ -1938,8 +2018,15 @@ print_node_attribute(gpointer name, gpointer user_data)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(data->stream, "   <li>%s: %s",
-                    (char *)name, value);
+            if (data->out) {
+                char str[20];
+                data->out->begin_list(data->out, "li", NULL, NULL);
+                sprintf(str, "%s: %s", (char *)name, value);
+                data->out->list_item(data->out, NULL, str);
+            } else {
+                fprintf(data->stream, "   <li>%s: %s",
+                        (char *)name, value);
+            }
             break;
 
         case mon_output_xml:
@@ -1971,7 +2058,11 @@ print_node_attribute(gpointer name, gpointer user_data)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(data->stream, "</li>\n");
+            if (data->out) {
+                data->out->end_list(data->out);
+            } else {
+                fprintf(data->stream, "</li>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -2006,10 +2097,15 @@ print_node_summary(FILE *stream, pe_working_set_t * data_set, gboolean operation
 
         case mon_output_html:
         case mon_output_cgi:
-            if (operations) {
-                fprintf(stream, " <hr />\n <h2>Operations</h2>\n");
+            if (out) {
+                out->list_item(out, "hr", NULL);
+                out->list_item(out, "h2", operations ? "Operations" : "Migration Summary" );
             } else {
-                fprintf(stream, " <hr />\n <h2>Migration Summary</h2>\n");
+                if (operations) {
+                    fprintf(stream, " <hr />\n <h2>Operations</h2>\n");
+                } else {
+                    fprintf(stream, " <hr />\n <h2>Migration Summary</h2>\n");
+                }
             }
             break;
 
@@ -2071,9 +2167,18 @@ print_ticket(gpointer name, gpointer value, gpointer data)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, "  <li>%s: %s%s", ticket->id,
-                    (ticket->granted? "granted" : "revoked"),
-                    (ticket->standby? " [standby]" : ""));
+            {
+                char str[50];
+                sprintf(str, "%s: %s%s", ticket->id,
+                        (ticket->granted? "granted" : "revoked"),
+                        (ticket->standby? " [standby]" : ""));
+                if (out) {
+                    out->begin_list(out, "li", NULL, NULL);
+                    out->list_item(out, NULL, str);
+                } else {
+                    fprintf(stream, "  <li>%s", str);
+                }
+            }
             break;
 
         case mon_output_xml:
@@ -2103,7 +2208,11 @@ print_ticket(gpointer name, gpointer value, gpointer data)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, "</li>\n");
+            if (out) {
+                out->end_list(out);
+            } else {
+                fprintf(stream, "</li>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -2133,7 +2242,13 @@ print_cluster_tickets(FILE *stream, pe_working_set_t * data_set, pcmk__output_t 
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <hr />\n <h2>Tickets</h2>\n <ul>\n");
+            if (out) {
+                out->list_item(out, "hr", NULL);
+                out->list_item(out, "h2", "Tickets");
+                out->begin_list(out, "ul", NULL, NULL);
+            } else {
+                fprintf(stream, " <hr />\n <h2>Tickets</h2>\n <ul>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -2154,6 +2269,11 @@ print_cluster_tickets(FILE *stream, pe_working_set_t * data_set, pcmk__output_t 
     /* Print each ticket */
     g_hash_table_foreach(data_set->tickets, print_ticket, &data);
 
+    if (out) {
+        out->end_list(out);
+        return;
+    }
+    
     /* Close section */
     switch (output_format) {
         case mon_output_html:
@@ -2162,11 +2282,7 @@ print_cluster_tickets(FILE *stream, pe_working_set_t * data_set, pcmk__output_t 
             break;
 
         case mon_output_xml:
-            if (out) {
-                out->end_list(out);
-            } else {
-                fprintf(stream, "    </tickets>\n");
-            }
+            fprintf(stream, "    </tickets>\n");
             break;
 
         default:
@@ -2265,11 +2381,19 @@ print_ban(FILE *stream, pe_node_t *node, pe__location_t *location, pcmk__output_
 
         case mon_output_html:
         case mon_output_cgi:
-            node_name = get_node_display_name(node);
-            fprintf(stream, "  <li>%s prevents %s from running %son %s</li>\n",
-                     location->id, location->rsc_lh->id,
-                     ((location->role_filter == RSC_ROLE_MASTER)? "as Master " : ""),
-                     node_name);
+            {
+                char str[0x100];
+                node_name = get_node_display_name(node);
+                sprintf(str, "%s prevents %s from running %son %s",
+                        location->id, location->rsc_lh->id,
+                        ((location->role_filter == RSC_ROLE_MASTER)? "as Master " : ""),
+                        node_name);
+                if (out) {
+                    out->list_item(out, "li", str);
+                } else {
+                    sprintf(str, "  <li>%s</li>\n", str);
+                }
+            }
             break;
 
         case mon_output_xml:
@@ -2315,7 +2439,13 @@ print_neg_locations(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *ou
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <hr />\n <h2>Negative Location Constraints</h2>\n <ul>\n");
+            if (out) {
+                out->list_item(out, "hr", NULL);
+                out->list_item(out, "h2", "Negative Location Constraints");
+                out->begin_list(out, "ul", NULL, NULL);
+            } else {
+                fprintf(stream, " <hr />\n <h2>Negative Location Constraints</h2>\n <ul>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -2344,6 +2474,11 @@ print_neg_locations(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *ou
         }
     }
 
+    if (out) {
+        out->end_list(out);
+        return;
+    }
+
     /* Close section */
     switch (output_format) {
         case mon_output_cgi:
@@ -2352,11 +2487,7 @@ print_neg_locations(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *ou
             break;
 
         case mon_output_xml:
-            if (out) {
-                out->end_list(out);
-            } else {
-                fprintf(stream, "    </bans>\n");
-            }
+            fprintf(stream, "    </bans>\n");
             break;
 
         default:
@@ -2399,7 +2530,12 @@ print_node_attributes(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <hr />\n <h2>Node Attributes</h2>\n");
+            if (out) {
+                out->list_item(out, "hr", NULL);
+                out->list_item(out, "h2", "Node Attributes");
+            } else {
+                fprintf(stream, " <hr />\n <h2>Node Attributes</h2>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -2511,7 +2647,12 @@ print_cluster_summary_header(FILE *stream, pcmk__output_t *out)
     switch (output_format) {
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <h2>Cluster Summary</h2>\n <p>\n");
+            if (out) {
+                out->list_item(out, "h2", "Cluster Summary");
+                out->begin_list(out, "p", NULL, NULL);
+            } else {
+                fprintf(stream, " <h2>Cluster Summary</h2>\n <p>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -2536,6 +2677,10 @@ print_cluster_summary_header(FILE *stream, pcmk__output_t *out)
 static void
 print_cluster_summary_footer(FILE *stream, pcmk__output_t *out)
 {
+    if (out) {
+        out->end_list(out);
+        return;
+    }
     switch (output_format) {
         case mon_output_cgi:
         case mon_output_html:
@@ -2543,11 +2688,7 @@ print_cluster_summary_footer(FILE *stream, pcmk__output_t *out)
             break;
 
         case mon_output_xml:
-            if(out){
-                out->end_list(out);
-            } else {
-                fprintf(stream, "    </summary>\n");
-            }
+            fprintf(stream, "    </summary>\n");
             break;
 
         default:
@@ -2590,18 +2731,38 @@ print_cluster_times(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *ou
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <b>Last updated:</b> %s<br/>\n", crm_now_string());
-            fprintf(stream, " <b>Last change:</b> %s", last_written ? last_written : "");
-            if (user) {
-                fprintf(stream, " by %s", user);
+            if (out) {
+                char str[20];
+                out->list_item(out, "b", "Last update:");
+                out->list_item(out, NULL, crm_now_string());
+                out->list_item(out, "br", NULL);
+                out->list_item(out, "b", "Last change:");
+                out->list_item(out, NULL, (last_written ? last_written : ""));
+                if (user) {
+                    sprintf(str, "by %s", user);
+                }
+                if (client) {
+                    sprintf(str, "via %s", client);
+                }
+                if (origin) {
+                    sprintf(str, "on %s", origin);
+                }
+                out->list_item(out, NULL, str);
+                out->list_item(out, "br", NULL);
+            } else {
+                fprintf(stream, " <b>Last updated:</b> %s<br/>\n", crm_now_string());
+                fprintf(stream, " <b>Last change:</b> %s", last_written ? last_written : "");
+                if (user) {
+                    fprintf(stream, " by %s", user);
+                }
+                if (client) {
+                    fprintf(stream, " via %s", client);
+                }
+                if (origin) {
+                    fprintf(stream, " on %s", origin);
+                }
+                fprintf(stream, "<br/>\n");
             }
-            if (client) {
-                fprintf(stream, " via %s", client);
-            }
-            if (origin) {
-                fprintf(stream, " on %s", origin);
-            }
-            fprintf(stream, "<br/>\n");
             break;
 
         case mon_output_xml:
@@ -2644,7 +2805,13 @@ print_cluster_stack(FILE *stream, const char *stack_s, pcmk__output_t *out)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <b>Stack:</b> %s<br/>\n", stack_s);
+            if (out) {
+                out->list_item(out, "b", "Stack:");
+                out->list_item(out, NULL, stack_s);
+                out->list_item(out, "br", NULL);
+            } else {
+                fprintf(stream, " <b>Stack:</b> %s<br/>\n", stack_s);
+            }
             break;
 
         case mon_output_xml:
@@ -2695,15 +2862,40 @@ print_cluster_dc(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *out)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <b>Current DC:</b> ");
-            if (dc) {
-                fprintf(stream, "%s (version %s) - partition %s quorum",
-                        dc_name, (dc_version_s? dc_version_s : "unknown"),
-                        (crm_is_true(quorum)? "with" : "<font color=\"red\"><b>WITHOUT</b></font>"));
+            if (out) {
+                out->list_item(out, "b", "Current DC:");
+                if (dc) {
+                    char str[100];
+                    sprintf(str, "%s (version %s) - partition",
+                            dc_name, (dc_version_s? dc_version_s : "unknown"));
+                    out->list_item(out, NULL, str);
+                    if (crm_is_true(quorum)) {
+                        out->list_item(out, NULL, "with");
+                    } else {
+                        out->begin_list(out, "font", NULL, NULL);
+                        out->set_str_prop(out, "color", "red");
+                        out->list_item(out, "b", "WITHOUT");
+                        out->end_list(out);
+                    }
+                    out->list_item(out, NULL, "quorum");
+                } else {
+                    out->begin_list(out, "font", NULL, NULL);
+                    out->set_str_prop(out, "color", "red");
+                    out->list_item(out, "b", "NONE");
+                    out->end_list(out);
+                }
+                out->list_item(out, "br", NULL);
             } else {
-                fprintf(stream, "<font color=\"red\"><b>NONE</b></font>");
+                fprintf(stream, " <b>Current DC:</b> ");
+                if (dc) {
+                    fprintf(stream, "%s (version %s) - partition %s quorum",
+                            dc_name, (dc_version_s? dc_version_s : "unknown"),
+                            (crm_is_true(quorum)? "with" : "<font color=\"red\"><b>WITHOUT</b></font>"));
+                } else {
+                    fprintf(stream, "<font color=\"red\"><b>NONE</b></font>");
+                }
+                fprintf(stream, "<br/>\n");
             }
-            fprintf(stream, "<br/>\n");
             break;
 
         case mon_output_xml:
@@ -2781,28 +2973,58 @@ print_cluster_counts(FILE *stream, pe_working_set_t *data_set, const char *stack
         case mon_output_html:
         case mon_output_cgi:
 
-            fprintf(stream, " %d node%s configured<br/>\n",
-                    nnodes, s_if_plural(nnodes));
+            if (out) {
+                char str[50];
+                sprintf(str, "%d node%s configured", nnodes, s_if_plural(nnodes));
+                out->list_item(out, NULL, str);
+                out->list_item(out, "br", NULL);
 
-            fprintf(stream, " %d resource%s configured",
-                    nresources, s_if_plural(nresources));
-            if (data_set->disabled_resources || data_set->blocked_resources) {
-                fprintf(stream, " (");
-                if (data_set->disabled_resources) {
-                    fprintf(stream, "%d <strong>DISABLED</strong>",
-                            data_set->disabled_resources);
+                sprintf(str, "%d resource%s configured",
+                        nresources, s_if_plural(nresources));
+                out->list_item(out, NULL, str);
+                if (data_set->disabled_resources || data_set->blocked_resources) {
+                    out->list_item(out, NULL, "(");
+                    if (data_set->disabled_resources) {
+                        sprintf(str, "%d", data_set->disabled_resources);
+                        out->list_item(out, NULL, str);
+                        out->list_item(out, "strong", "DISABLED");
+                    }
+                    if (data_set->disabled_resources && data_set->blocked_resources) {
+                        out->list_item(out, NULL, ",");
+                    }
+                    if (data_set->blocked_resources) {
+                        sprintf(str, "%d", data_set->blocked_resources);
+                        out->list_item(out, NULL, str);
+                        out->list_item(out, "strong", "BLOCKED");
+                        out->list_item(out, NULL, "from starting due to failure");
+                    }
+                    out->list_item(out, NULL, ")");
                 }
-                if (data_set->disabled_resources && data_set->blocked_resources) {
-                    fprintf(stream, ", ");
+                out->list_item(out, "br", NULL);
+            } else {
+                fprintf(stream, " %d node%s configured<br/>\n",
+                        nnodes, s_if_plural(nnodes));
+
+                fprintf(stream, " %d resource%s configured",
+                        nresources, s_if_plural(nresources));
+                if (data_set->disabled_resources || data_set->blocked_resources) {
+                    fprintf(stream, " (");
+                    if (data_set->disabled_resources) {
+                        fprintf(stream, "%d <strong>DISABLED</strong>",
+                                data_set->disabled_resources);
+                    }
+                    if (data_set->disabled_resources && data_set->blocked_resources) {
+                        fprintf(stream, ", ");
+                    }
+                    if (data_set->blocked_resources) {
+                        fprintf(stream,
+                                "%d <strong>BLOCKED</strong> from starting due to failure",
+                                data_set->blocked_resources);
+                    }
+                    fprintf(stream, ")");
                 }
-                if (data_set->blocked_resources) {
-                    fprintf(stream,
-                            "%d <strong>BLOCKED</strong> from starting due to failure",
-                            data_set->blocked_resources);
-                }
-                fprintf(stream, ")");
+                fprintf(stream, "<br/>\n");
             }
-            fprintf(stream, "<br/>\n");
             break;
 
         case mon_output_xml:
@@ -2853,16 +3075,67 @@ print_cluster_options(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *
             break;
 
         case mon_output_html:
-            fprintf(stream, " </p>\n <h3>Config Options</h3>\n");
-            fprintf(stream, " <table>\n");
-            fprintf(stream, "  <tr><th>STONITH of failed nodes</th><td>%s</td></tr>\n",
-                    is_set(data_set->flags, pe_flag_stonith_enabled)? "enabled" : "disabled");
+            if (out) {
+                char str[100];
+                out->end_list(out);
+                out->list_item(out, "h3", "Config Options");
+                out->begin_list(out, "table", NULL, NULL);
+                out->begin_list(out, "tr", NULL, NULL);
+                out->list_item(out, "th", "STONITH of failed nodes");
+                out->list_item(out, "td", is_set(data_set->flags, pe_flag_stonith_enabled)
+                                          ? "enabled" : "disabled");
+                out->end_list(out);
+                
+                out->begin_list(out, "tr", NULL, NULL);
+                out->list_item(out, "th", "Cluster is");
+                sprintf(str, "%ssymmetric", is_set(data_set->flags, pe_flag_symmetric_cluster)
+                                            ? "" : "a");
+                out->list_item(out, "td", str);
+                out->end_list(out);
 
-            fprintf(stream, "  <tr><th>Cluster is</th><td>%ssymmetric</td></tr>\n",
-                    is_set(data_set->flags, pe_flag_symmetric_cluster)? "" : "a");
+                out->begin_list(out, "tr", NULL, NULL);
+                out->list_item(out, "th", "No Quorum Policy");
+                switch (data_set->no_quorum_policy) {
+                case no_quorum_freeze:
+                    sprintf(str, "Freeze resources");
+                    break;
+                case no_quorum_stop:
+                    sprintf(str, "Stop ALL resources");
+                    break;
+                case no_quorum_ignore:
+                    sprintf(str, "Ignore");
+                    break;
+                case no_quorum_suicide:
+                    sprintf(str, "Suicide");
+                    break;
+                }
+                out->list_item(out, "td", str);
+                out->end_list(out);
 
-            fprintf(stream, "  <tr><th>No Quorum Policy</th><td>");
-            switch (data_set->no_quorum_policy) {
+                out->begin_list(out, "tr", NULL, NULL);
+                out->list_item(out, "th", "Resource management");
+                out->begin_list(out, "td", NULL, NULL);
+                if (is_set(data_set->flags, pe_flag_maintenance_mode)) {
+                    out->list_item(out, "strong", "DISABLED");
+                    out->list_item(out, NULL, "(the cluster will "
+                                   "not attempt to start, "
+                                   "stop or recover services)");
+                } else {
+                    out->list_item(out, NULL, "enables");
+                }
+                out->end_list(out); // td
+                out->end_list(out); // tr
+                out->end_list(out); // table
+                out->end_list(out); // p
+            } else {
+                fprintf(stream, " </p>\n <h3>Config Options</h3>\n");
+                fprintf(stream, " <table>\n");
+                fprintf(stream, "  <tr><th>STONITH of failed nodes</th><td>%s</td></tr>\n",
+                        is_set(data_set->flags, pe_flag_stonith_enabled)? "enabled" : "disabled");
+                fprintf(stream, "  <tr><th>Cluster is</th><td>%ssymmetric</td></tr>\n",
+                        is_set(data_set->flags, pe_flag_symmetric_cluster)? "" : "a");
+                fprintf(stream, "  <tr><th>No Quorum Policy</th><td>");
+                switch (data_set->no_quorum_policy) {
                 case no_quorum_freeze:
                     fprintf(stream, "Freeze resources");
                     break;
@@ -2875,19 +3148,19 @@ print_cluster_options(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *
                 case no_quorum_suicide:
                     fprintf(stream, "Suicide");
                     break;
-            }
-            fprintf(stream, "</td></tr>\n");
+                }
+                fprintf(stream, "</td></tr>\n");
 
-            fprintf(stream, "  <tr><th>Resource management</th><td>");
-            if (is_set(data_set->flags, pe_flag_maintenance_mode)) {
-                fprintf(stream, "<strong>DISABLED</strong> (the cluster will "
-                                "not attempt to start, stop or recover services)");
-            } else {
-                fprintf(stream, "enabled");
+                fprintf(stream, "  <tr><th>Resource management</th><td>");
+                if (is_set(data_set->flags, pe_flag_maintenance_mode)) {
+                    fprintf(stream, "<strong>DISABLED</strong> (the cluster will "
+                            "not attempt to start, stop or recover services)");
+                } else {
+                    fprintf(stream, "enabled");
+                }
+                fprintf(stream, "</td></tr>\n");
+                fprintf(stream, "</table>\n <p>\n");
             }
-            fprintf(stream, "</td></tr>\n");
-
-            fprintf(stream, "</table>\n <p>\n");
             break;
 
         case mon_output_xml:
@@ -3066,9 +3339,18 @@ print_failed_action(FILE *stream, xmlNode *xml_op, pcmk__output_t *out)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, "  <li>%s on %s '%s' (%d): call=%s, status=%s, exitreason='%s'",
-                     op_key, node, services_ocf_exitcode_str(rc), rc,
-                     call, services_lrm_status_str(status), exit_reason);
+            if (out) {
+                char str[0x100];
+                sprintf(str, "%s on %s '%s' (%d): call=%s, status=%s, exitreason='%s'",
+                        op_key, node, services_ocf_exitcode_str(rc), rc,
+                        call, services_lrm_status_str(status), exit_reason);
+                out->begin_list(out, "li", NULL, NULL);
+                out->list_item(out, NULL, str);
+            } else {
+                fprintf(stream, "  <li>%s on %s '%s' (%d): call=%s, status=%s, exitreason='%s'",
+                        op_key, node, services_ocf_exitcode_str(rc), rc,
+                        call, services_lrm_status_str(status), exit_reason);
+            }
             break;
 
         case mon_output_xml:
@@ -3118,10 +3400,19 @@ print_failed_action(FILE *stream, xmlNode *xml_op, pcmk__output_t *out)
 
             case mon_output_html:
             case mon_output_cgi:
-                fprintf(stream, " last-rc-change='%s', queued=%sms, exec=%sms",
-                        run_at_s? run_at_s : "",
-                        crm_element_value(xml_op, XML_RSC_OP_T_QUEUE),
-                        crm_element_value(xml_op, XML_RSC_OP_T_EXEC));
+                if (out) {
+                    char str[0x100];
+                    sprintf(str, " last-rc-change='%s', queued=%sms, exec=%sms",
+                            run_at_s? run_at_s : "",
+                            crm_element_value(xml_op, XML_RSC_OP_T_QUEUE),
+                            crm_element_value(xml_op, XML_RSC_OP_T_EXEC));
+                    out->list_item(out, NULL, str);
+                } else {
+                    fprintf(stream, " last-rc-change='%s', queued=%sms, exec=%sms",
+                            run_at_s? run_at_s : "",
+                            crm_element_value(xml_op, XML_RSC_OP_T_QUEUE),
+                            crm_element_value(xml_op, XML_RSC_OP_T_EXEC));
+                }
                 break;
 
             case mon_output_xml:
@@ -3156,7 +3447,11 @@ print_failed_action(FILE *stream, xmlNode *xml_op, pcmk__output_t *out)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, "</li>\n");
+            if (out) {
+                out->end_list(out);
+            } else {
+                fprintf(stream, "</li>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -3193,8 +3488,14 @@ print_failed_actions(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *o
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream,
-                    " <hr />\n <h2>Failed Resource Actions</h2>\n <ul>\n");
+            if (out) {
+                out->list_item(out, "hr", NULL);
+                out->list_item(out, "h2", "Failed Resource Actions");
+                out->begin_list(out, "ul", NULL, NULL);
+            } else {
+                fprintf(stream,
+                        " <hr />\n <h2>Failed Resource Actions</h2>\n <ul>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -3215,6 +3516,10 @@ print_failed_actions(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *o
         print_failed_action(stream, xml_op, out);
     }
 
+    if (out) {
+        out->end_list(out);
+        return;
+    }
     /* End section */
     switch (output_format) {
         case mon_output_html:
@@ -3223,11 +3528,7 @@ print_failed_actions(FILE *stream, pe_working_set_t *data_set, pcmk__output_t *o
             break;
 
         case mon_output_xml:
-            if (out) {
-                out->end_list(out);
-            } else {
-                fprintf(stream, "    </failures>\n");
-            }
+            fprintf(stream, "    </failures>\n");
             break;
 
         default:
@@ -3462,30 +3763,38 @@ print_stonith_action(FILE *stream, stonith_history_t *event, pcmk__output_t *out
 
         case mon_output_html:
         case mon_output_cgi:
-            switch(event->state) {
+            {
+                char str[0x100];
+                switch(event->state) {
                 case st_done:
-                    fprintf(stream, "  <li>%s of %s successful: delegate=%s, "
-                                    "client=%s, origin=%s, %s='%s'</li>\n",
-                                    action_s, event->target,
-                                    event->delegate ? event->delegate : "",
-                                    event->client, event->origin,
-                                    fence_full_history?"completed":"last-successful",
-                                    run_at_s?run_at_s:"");
+                    sprintf(str, "%s of %s successful: delegate=%s, "
+                            "client=%s, origin=%s, %s='%s'",
+                            action_s, event->target,
+                            event->delegate ? event->delegate : "",
+                            event->client, event->origin,
+                            fence_full_history?"completed":"last-successful",
+                            run_at_s?run_at_s:"");
                     break;
                 case st_failed:
-                    fprintf(stream, "  <li>%s of %s failed: delegate=%s, "
-                                    "client=%s, origin=%s, %s='%s'</li>\n",
-                                    action_s, event->target,
-                                    event->delegate ? event->delegate : "",
-                                    event->client, event->origin,
-                                    fence_full_history?"completed":"last-failed",
-                                    run_at_s?run_at_s:"");
+                    sprintf(str, "%s of %s failed: delegate=%s, "
+                            "client=%s, origin=%s, %s='%s'",
+                            action_s, event->target,
+                            event->delegate ? event->delegate : "",
+                            event->client, event->origin,
+                            fence_full_history?"completed":"last-failed",
+                            run_at_s?run_at_s:"");
                     break;
                 default:
-                    fprintf(stream, "  <li>%s of %s pending: client=%s, "
-                                    "origin=%s</li>\n",
-                                    action_s, event->target,
-                                    event->client, event->origin);
+                    sprintf(str, "%s of %s pending: client=%s, "
+                            "origin=%s",
+                            action_s, event->target,
+                            event->client, event->origin);
+                }
+                if (out) {
+                    out->list_item(out, "li", str);
+                } else {
+                    fprintf(stream, "  <li>%s</li>\n", str);
+                }
             }
             break;
 
@@ -3504,7 +3813,7 @@ print_stonith_action(FILE *stream, stonith_history_t *event, pcmk__output_t *out
  *
  */
 static void
-print_failed_stonith_actions(FILE *stream, stonith_history_t *history)
+print_failed_stonith_actions(FILE *stream, stonith_history_t *history, pcmk__output_t *out)
 {
     stonith_history_t *hp;
 
@@ -3529,7 +3838,13 @@ print_failed_stonith_actions(FILE *stream, stonith_history_t *history)
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <hr />\n <h2>Failed Fencing Actions</h2>\n <ul>\n");
+            if (out) {
+                out->list_item(out, "hr", NULL);
+                out->list_item(out, "h2", "Failed Fencing Actions");
+                out->begin_list(out, "ul", NULL, NULL);
+            } else {
+                fprintf(stream, " <hr />\n <h2>Failed Fencing Actions</h2>\n <ul>\n");
+            }
             break;
 
         default:
@@ -3539,7 +3854,7 @@ print_failed_stonith_actions(FILE *stream, stonith_history_t *history)
     /* Print each failed stonith action */
     for (hp = history; hp; hp = hp->next) {
         if (hp->state == st_failed) {
-            print_stonith_action(stream, hp, NULL);
+            print_stonith_action(stream, hp, out);
         }
     }
 
@@ -3547,7 +3862,11 @@ print_failed_stonith_actions(FILE *stream, stonith_history_t *history)
     switch (output_format) {
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " </ul>\n");
+            if (out) {
+                out->end_list(out);
+            } else {
+                fprintf(stream, " </ul>\n");
+            }
             break;
 
         default:
@@ -3564,7 +3883,7 @@ print_failed_stonith_actions(FILE *stream, stonith_history_t *history)
  *
  */
 static void
-print_stonith_pending(FILE *stream, stonith_history_t *history)
+print_stonith_pending(FILE *stream, stonith_history_t *history, pcmk__output_t *out)
 {
     /* xml-output always shows the full history
      * so we'll never have to show pending-actions
@@ -3583,7 +3902,13 @@ print_stonith_pending(FILE *stream, stonith_history_t *history)
 
             case mon_output_html:
             case mon_output_cgi:
-                fprintf(stream, " <hr />\n <h2>Pending Fencing Actions</h2>\n <ul>\n");
+                if (out) {
+                    out->list_item(out, "hr", NULL);
+                    out->list_item(out, "h2", "Pending Fencing Actions");
+                    out->begin_list(out, "ul", NULL, NULL);
+                } else {
+                    fprintf(stream, " <hr />\n <h2>Pending Fencing Actions</h2>\n <ul>\n");
+                }
                 break;
 
             default:
@@ -3601,7 +3926,11 @@ print_stonith_pending(FILE *stream, stonith_history_t *history)
         switch (output_format) {
             case mon_output_html:
             case mon_output_cgi:
-                fprintf(stream, " </ul>\n");
+                if (out) {
+                    out->end_list(out);
+                } else {
+                    fprintf(stream, " </ul>\n");
+                }
                 break;
 
         default:
@@ -3632,7 +3961,13 @@ print_stonith_history(FILE *stream, stonith_history_t *history, pcmk__output_t *
 
         case mon_output_html:
         case mon_output_cgi:
-            fprintf(stream, " <hr />\n <h2>Fencing History</h2>\n <ul>\n");
+            if (out) {
+                out->list_item(out, "hr", NULL);
+                out->list_item(out, "h2", "Fencing History");
+                out->begin_list(out, "ul", NULL, NULL);
+            } else {
+                fprintf(stream, " <hr />\n <h2>Fencing History</h2>\n <ul>\n");
+            }
             break;
 
         case mon_output_xml:
@@ -3653,6 +3988,10 @@ print_stonith_history(FILE *stream, stonith_history_t *history, pcmk__output_t *
         }
     }
 
+    if (out) {
+        out->end_list(out);
+        return;
+    }
     /* End section */
     switch (output_format) {
         case mon_output_html:
@@ -3661,11 +4000,7 @@ print_stonith_history(FILE *stream, stonith_history_t *history, pcmk__output_t *
             break;
 
         case mon_output_xml:
-            if (out) {
-                out->end_list(out);
-            } else {
-                fprintf(stream, "    </fence_history>\n");
-            }
+            fprintf(stream, "    </fence_history>\n");
             break;
 
         default:
@@ -3847,7 +4182,7 @@ print_status(pe_working_set_t * data_set,
 
     /* Print failed stonith actions */
     if (fence_history) {
-        print_failed_stonith_actions(stdout, stonith_history);
+        print_failed_stonith_actions(stdout, stonith_history, NULL);
     }
 
     /* Print tickets if requested */
@@ -3865,7 +4200,7 @@ print_status(pe_working_set_t * data_set,
         if (show & mon_show_fence_history) {
             print_stonith_history(stdout, stonith_history, NULL);
         } else {
-            print_stonith_pending(stdout, stonith_history);
+            print_stonith_pending(stdout, stonith_history, NULL);
         }
     }
 
@@ -3880,8 +4215,10 @@ static crm_exit_t
 pcmk__output_xml_new(pcmk__output_t **out)
 {
     // TODO! de-hardcode the argv[0]
-    const char* argv[] = {"/usr/sbin/crm_mon", "--output-as", "xml", 0};
+    const char* argv[] = {"/usr/sbin/crm_mon", "-X", 0};
+
     CRM_ASSERT(pcmk__register_format("xml", pcmk__mk_xml_output) == 0);
+
     return pcmk__output_new(out, "xml", NULL, (char**)argv);
 }
 /*!
@@ -4007,6 +4344,14 @@ print_xml_status(pe_working_set_t * data_set,
     pcmk__output_free(out, exit_code);
 }
 
+static crm_exit_t
+pcmk__output_html_new(pcmk__output_t **out)
+{
+    const char* argv[] = {"/usr/sbin/crm_mon", "-h", 0};
+    CRM_ASSERT(pcmk__register_format("html", pcmk__mk_html_output) == 0);
+    return pcmk__output_new(out, "html", NULL, (char**)argv);
+}
+
 /*!
  * \internal
  * \brief Print cluster status in HTML format (with HTTP headers if CGI)
@@ -4026,10 +4371,18 @@ print_html_status(pe_working_set_t * data_set,
     char *filename_tmp = NULL;
     int print_opts = get_resource_display_options();
 
+    pcmk__output_t *out = NULL;
+    int rc = 0;
+    crm_exit_t exit_code = CRM_EX_OK;
+
+    rc = pcmk__output_html_new(&out);
+    if (rc != 0) {
+        fprintf(stderr, "Could not create/initialize output format: %s\n", pcmk_strerror(rc));
+        exit_code = CRM_EX_ERROR;
+    }
+    
     if (output_format == mon_output_cgi) {
         stream = stdout;
-        fprintf(stream, "Content-Type: text/html\n\n");
-
     } else {
         filename_tmp = crm_concat(filename, "tmp", '.');
         stream = fopen(filename_tmp, "w");
@@ -4040,71 +4393,84 @@ print_html_status(pe_working_set_t * data_set,
         }
     }
 
-    fprintf(stream, "<html>\n");
-    fprintf(stream, " <head>\n");
-    fprintf(stream, "  <title>Cluster status</title>\n");
-    fprintf(stream, "  <meta http-equiv=\"refresh\" content=\"%d\">\n", reconnect_msec / 1000);
-    fprintf(stream, " </head>\n");
-    fprintf(stream, "<body>\n");
+    out->begin_list(out, "html", NULL, NULL);
+    out->begin_list(out, "head", NULL, NULL);
+    out->list_item(out, "title", "Cluster status");
+    out->list_item(out, "meta", NULL);
+    out->set_str_prop(out, "http-equv", "refresh");
+    out->set_int_prop(out, "content", reconnect_msec / 1000);
+    out->end_list(out);
+    out->begin_list(out, "body", NULL, NULL);
 
-    print_cluster_summary(stream, data_set, NULL);
+    print_cluster_summary(stream, data_set, out);
 
     /*** NODE LIST ***/
 
-    fprintf(stream, " <hr />\n <h2>Node List</h2>\n");
-    fprintf(stream, "<ul>\n");
+    out->list_item(out, "hr", NULL);
+    out->list_item(out, "h2", "Node List");
+    out->begin_list(out, "ul", NULL, NULL);
     for (gIter = data_set->nodes; gIter != NULL; gIter = gIter->next) {
         node_t *node = (node_t *) gIter->data;
         char *node_name = get_node_display_name(node);
+        char str[30];
 
-        fprintf(stream, "<li>Node: %s: ", node_name);
+        out->begin_list(out, "li", NULL, NULL);
+        sprintf(str, "Node: %s: ", node_name);
+        out->list_item(out, str, NULL);
         if (node->details->standby_onfail && node->details->online) {
-            fprintf(stream, "<font color=\"orange\">standby (on-fail)</font>\n");
+            out->list_item(out, "font", "standby (on-fail)");
+            out->set_str_prop(out, "color", "orange");
         } else if (node->details->standby && node->details->online) {
-
-            fprintf(stream, "<font color=\"orange\">standby%s</font>\n",
-                node->details->running_rsc?" (with active resources)":"");
+            sprintf(str, "standby%s", node->details->running_rsc
+                    ? " (with active resources)" : "");
+            out->list_item(out, "font", str);
+            out->set_str_prop(out, "color", "orange");
         } else if (node->details->standby) {
-            fprintf(stream, "<font color=\"red\">OFFLINE (standby)</font>\n");
+            out->list_item(out, "font", "OFFLINE (standby)");
+            out->set_str_prop(out, "color", "red");
         } else if (node->details->maintenance && node->details->online) {
-            fprintf(stream, "<font color=\"blue\">maintenance</font>\n");
+            out->list_item(out, "font", "maintenance");
+            out->set_str_prop(out, "color", "blue");
         } else if (node->details->maintenance) {
-            fprintf(stream, "<font color=\"red\">OFFLINE (maintenance)</font>\n");
+            out->list_item(out, "font", "OFFLINE (maintenance)");
+            out->set_str_prop(out, "color", "red");
         } else if (node->details->online) {
-            fprintf(stream, "<font color=\"green\">online</font>\n");
+            out->list_item(out, "font", "online");
+            out->set_str_prop(out, "color", "green");
         } else {
-            fprintf(stream, "<font color=\"red\">OFFLINE</font>\n");
+            out->list_item(out, "font", "OFFLINE");
+            out->set_str_prop(out, "color", "red");
         }
         if (print_brief && group_by_node) {
-            fprintf(stream, "<ul>\n");
+            out->begin_list(out, "ul", NULL, NULL);
             print_rscs_brief(node->details->running_rsc, NULL, print_opts | pe_print_rsconly,
                              stream, FALSE);
-            fprintf(stream, "</ul>\n");
+            out->end_list(out);
 
         } else if (group_by_node) {
             GListPtr lpc2 = NULL;
 
-            fprintf(stream, "<ul>\n");
+            out->begin_list(out, "ul", NULL, NULL);
             for (lpc2 = node->details->running_rsc; lpc2 != NULL; lpc2 = lpc2->next) {
                 resource_t *rsc = (resource_t *) lpc2->data;
 
-                fprintf(stream, "<li>");
-                rsc->fns->print(rsc, NULL, print_opts | pe_print_rsconly, stream, NULL);
-                fprintf(stream, "</li>\n");
+                out->begin_list(out, "li", NULL, NULL);
+                rsc->fns->print(rsc, NULL, print_opts | pe_print_rsconly, stream, out);
+                out->end_list(out);
             }
-            fprintf(stream, "</ul>\n");
+            out->end_list(out);
         }
-        fprintf(stream, "</li>\n");
+        out->end_list(out);
         free(node_name);
     }
-    fprintf(stream, "</ul>\n");
+    out->end_list(out);
 
     /* Print resources section, if needed */
-    print_resources(stream, data_set, print_opts, NULL);
+    print_resources(stream, data_set, print_opts, out);
 
     /* print Node Attributes section if requested */
     if (show & mon_show_attributes) {
-        print_node_attributes(stream, data_set, NULL);
+        print_node_attributes(stream, data_set, out);
     }
 
     /* If requested, print resource operations (which includes failcounts)
@@ -4112,40 +4478,41 @@ print_html_status(pe_working_set_t * data_set,
      */
     if (show & (mon_show_operations | mon_show_failcounts)) {
         print_node_summary(stream, data_set,
-                           ((show & mon_show_operations)? TRUE : FALSE), NULL);
+                           ((show & mon_show_operations)? TRUE : FALSE), out);
     }
 
     /* If there were any failed actions, print them */
     if (xml_has_children(data_set->failed)) {
-        print_failed_actions(stream, data_set, NULL);
+        print_failed_actions(stream, data_set, out);
     }
 
     /* Print failed stonith actions */
     if (fence_history) {
-        print_failed_stonith_actions(stream, stonith_history);
+        print_failed_stonith_actions(stream, stonith_history, out);
     }
 
     /* Print stonith history */
     if (fence_history) {
         if (show & mon_show_fence_history) {
-            print_stonith_history(stream, stonith_history, NULL);
+            print_stonith_history(stream, stonith_history, out);
         } else {
-            print_stonith_pending(stdout, stonith_history);
+            print_stonith_pending(stdout, stonith_history, out);
         }
     }
 
     /* Print tickets if requested */
     if (show & mon_show_tickets) {
-        print_cluster_tickets(stream, data_set, NULL);
+        print_cluster_tickets(stream, data_set, out);
     }
 
     /* Print negative location constraints if requested */
     if (show & mon_show_bans) {
-        print_neg_locations(stream, data_set, NULL);
+        print_neg_locations(stream, data_set, out);
     }
 
-    fprintf(stream, "</body>\n");
-    fprintf(stream, "</html>\n");
+    out->end_list(out);
+    out->end_list(out);
+    pcmk__output_free(out, exit_code);
     fflush(stream);
     fclose(stream);
 

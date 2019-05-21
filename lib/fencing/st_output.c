@@ -42,6 +42,22 @@ fence_target_xml(pcmk__output_t *out, va_list args) {
 }
 
 static int
+fence_target_html(pcmk__output_t *out, va_list args) {
+    xmlNodePtr node = NULL;
+    const char *hostname = va_arg(args, const char *);
+    const char *uuid = va_arg(args, const char *);
+    const char *status = va_arg(args, const char *);
+
+    node = xmlNewNode(NULL, (pcmkXmlStr) "target");
+    xmlSetProp(node, (pcmkXmlStr) "hostname", (pcmkXmlStr) hostname);
+    xmlSetProp(node, (pcmkXmlStr) "uuid", (pcmkXmlStr) uuid);
+    xmlSetProp(node, (pcmkXmlStr) "status", (pcmkXmlStr) status);
+
+    pcmk__html_add_node(out, node);
+    return 0;
+}
+
+static int
 last_fenced_text(pcmk__output_t *out, va_list args) {
     const char *target = va_arg(args, const char *);
     time_t when = va_arg(args, time_t);
@@ -72,6 +88,31 @@ last_fenced_xml(pcmk__output_t *out, va_list args) {
         xmlSetProp(node, (pcmkXmlStr) "when", (pcmkXmlStr) buf);
 
         pcmk__xml_add_node(out, node);
+
+        crm_time_free(crm_when);
+        free(buf);
+    }
+
+    return 0;
+}
+
+static int
+last_fenced_html(pcmk__output_t *out, va_list args) {
+    const char *target = va_arg(args, const char *);
+    time_t when = va_arg(args, time_t);
+
+    if (when) {
+        crm_time_t *crm_when = crm_time_new(NULL);
+        xmlNodePtr node = xmlNewNode(NULL, (pcmkXmlStr) "last-fenced");
+        char *buf = NULL;
+
+        crm_time_set_timet(crm_when, &when);
+        buf = crm_time_as_string(crm_when, crm_time_log_date | crm_time_log_timeofday | crm_time_log_with_timezone);
+
+        xmlSetProp(node, (pcmkXmlStr) "target", (pcmkXmlStr) target);
+        xmlSetProp(node, (pcmkXmlStr) "when", (pcmkXmlStr) buf);
+
+        pcmk__html_add_node(out, node);
 
         crm_time_free(crm_when);
         free(buf);
@@ -160,6 +201,52 @@ stonith_event_xml(pcmk__output_t *out, va_list args) {
 }
 
 static int
+stonith_event_html(pcmk__output_t *out, va_list args) {
+    xmlNodePtr node = NULL;
+    stonith_history_t *event = va_arg(args, stonith_history_t *);
+    crm_time_t *crm_when = crm_time_new(NULL);
+    char *buf = NULL;
+
+    node = xmlNewNode(NULL, (pcmkXmlStr) "stonith-event");
+
+    switch (event->state) {
+        case st_failed:
+            xmlSetProp(node, (pcmkXmlStr) "status", (pcmkXmlStr) "failed");
+            break;
+
+        case st_done:
+            xmlSetProp(node, (pcmkXmlStr) "status", (pcmkXmlStr) "done");
+            break;
+
+        default: {
+            char *state = crm_itoa(event->state);
+            xmlSetProp(node, (pcmkXmlStr) "status", (pcmkXmlStr) state);
+            free(state);
+            break;
+        }
+    }
+
+    if (event->delegate != NULL) {
+        xmlSetProp(node, (pcmkXmlStr) "delegate", (pcmkXmlStr) event->delegate);
+    }
+
+    xmlSetProp(node, (pcmkXmlStr) "action", (pcmkXmlStr) event->action);
+    xmlSetProp(node, (pcmkXmlStr) "target", (pcmkXmlStr) event->target);
+    xmlSetProp(node, (pcmkXmlStr) "client", (pcmkXmlStr) event->client);
+    xmlSetProp(node, (pcmkXmlStr) "origin", (pcmkXmlStr) event->origin);
+
+    crm_time_set_timet(crm_when, &event->completed);
+    buf = crm_time_as_string(crm_when, crm_time_log_date | crm_time_log_timeofday | crm_time_log_with_timezone);
+    xmlSetProp(node, (pcmkXmlStr) "when", (pcmkXmlStr) buf);
+
+    pcmk__html_add_node(out, node);
+
+    crm_time_free(crm_when);
+    free(buf);
+    return 0;
+}
+
+static int
 validate_agent_text(pcmk__output_t *out, va_list args) {
     const char *agent = va_arg(args, const char *);
     const char *device = va_arg(args, const char *);
@@ -211,15 +298,44 @@ validate_agent_xml(pcmk__output_t *out, va_list args) {
     return rc;
 }
 
+static int
+validate_agent_html(pcmk__output_t *out, va_list args) {
+    xmlNodePtr node = NULL;
+
+    const char *agent = va_arg(args, const char *);
+    const char *device = va_arg(args, const char *);
+    const char *output = va_arg(args, const char *);
+    const char *error_output = va_arg(args, const char *);
+    int rc = va_arg(args, int);
+
+    node = xmlNewNode(NULL, (pcmkXmlStr) "validate");
+    xmlSetProp(node, (pcmkXmlStr) "agent", (pcmkXmlStr) agent);
+    if (device != NULL) {
+        xmlSetProp(node, (pcmkXmlStr) "device", (pcmkXmlStr) device);
+    }
+    xmlSetProp(node, (pcmkXmlStr) "valid", (pcmkXmlStr) (rc ? "false" : "true"));
+
+    pcmk__html_push_parent(out, node);
+    out->subprocess_output(out, rc, output, error_output);
+    pcmk__html_pop_parent(out);
+
+    pcmk__html_add_node(out, node);
+    return rc;
+}
+
 static pcmk__message_entry_t fmt_functions[] = {
     { "fence-target", "text", fence_target_text },
     { "fence-target", "xml", fence_target_xml },
+    { "fence-target", "html", fence_target_html },
     { "last-fenced", "text", last_fenced_text },
     { "last-fenced", "xml", last_fenced_xml },
+    { "last-fenced", "html", last_fenced_html },
     { "stonith-event", "text", stonith_event_text },
     { "stonith-event", "xml", stonith_event_xml },
+    { "stonith-event", "html", stonith_event_html },
     { "validate", "text", validate_agent_text },
     { "validate", "xml", validate_agent_xml },
+    { "validate", "html", validate_agent_html },
 
     { NULL, NULL, NULL }
 };

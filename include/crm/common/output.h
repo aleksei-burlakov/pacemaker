@@ -21,6 +21,7 @@ extern "C" {
 
 #  include <stdio.h>
 #  include <libxml/tree.h>
+#  include <libxml/HTMLparser.h>
 
 #  include <glib.h>
 #  include <crm/common/results.h>
@@ -111,6 +112,7 @@ typedef struct pcmk__message_entry_s {
  */
 pcmk__output_t *pcmk__mk_text_output(char **argv);
 pcmk__output_t *pcmk__mk_xml_output(char **argv);
+pcmk__output_t *pcmk__mk_html_output(char **argv);
 
 /*!
  * \brief This structure contains everything that makes up a single output
@@ -506,6 +508,17 @@ pcmk__xml_add_node(pcmk__output_t *out, xmlNodePtr node);
 
 /*!
  * \internal
+ * \brief Add the given node as a child of the current list parent.  This is
+ *        used when implementing custom message functions.
+ *
+ * \param[in,out] out  The output functions structure.
+ * \param[in]     node An XML node to be added as a child.
+ */
+void
+pcmk__html_add_node(pcmk__output_t *out, xmlNodePtr node);
+
+/*!
+ * \internal
  * \brief Push a parent XML node onto the stack.  This is used when implementing
  *        custom message functions.
  *
@@ -523,6 +536,23 @@ pcmk__xml_push_parent(pcmk__output_t *out, xmlNodePtr node);
 
 /*!
  * \internal
+ * \brief Push a parent XML node onto the stack.  This is used when implementing
+ *        custom message functions.
+ *
+ * The XML output formatter maintains an internal stack to keep track of which nodes
+ * are parents in order to build up the tree structure.  This function can be used
+ * to temporarily push a new node onto the stack.  After calling this function, any
+ * other formatting functions will have their nodes added as children of this new
+ * parent.
+ *
+ * \param[in,out] out  The output functions structure.
+ * \param[in]     node The node to be added/
+ */
+void
+pcmk__html_push_parent(pcmk__output_t *out, xmlNodePtr node);
+
+/*!
+ * \internal
  * \brief Pop a parent XML node onto the stack.  This is used when implementing
  *        custom message functions.
  *
@@ -537,6 +567,23 @@ pcmk__xml_push_parent(pcmk__output_t *out, xmlNodePtr node);
  */
 void
 pcmk__xml_pop_parent(pcmk__output_t *out);
+
+/*!
+ * \internal
+ * \brief Pop a parent XML node onto the stack.  This is used when implementing
+ *        custom message functions.
+ *
+ * This function removes a parent node from the stack.  See pcmk__xml_push_parent()
+ * for more details.
+ *
+ * \note Little checking is done with this function.  Be sure you only pop parents
+ * that were previously pushed.  In general, it is best to keep the code between
+ * push and pop simple.
+ *
+ * \param[in,out] out The output functions structure.
+ */
+void
+pcmk__html_pop_parent(pcmk__output_t *out);
 
 #ifdef __cplusplus
 }
