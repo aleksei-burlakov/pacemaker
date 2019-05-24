@@ -1514,7 +1514,7 @@ print_bundle_replica(pe__bundle_replica_t *replica, const char *pre_text,
     }
 
     node = pe__current_node(replica->container);
-    common_print(rsc, pre_text, buffer, node, options, print_data);
+    common_print(rsc, pre_text, buffer, node, options, print_data, NULL);
 }
 
 void

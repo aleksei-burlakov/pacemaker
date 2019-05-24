@@ -173,14 +173,11 @@ html_begin_list(pcmk__output_t *out, const char *name,
 static void
 html_list_item(pcmk__output_t *out, const char *name, const char *content) {
     xml_private_t *priv = out->priv;
-    htmlNodePtr node;
     
     CRM_ASSERT(priv != NULL);
 
-    /* FIXME! That's a workaround to make
-     * a dummy tag that has no effect */
     if (name == NULL) {
-        node = g_queue_pop_tail(priv->parent_q);
+        htmlNodePtr node = g_queue_peek_tail(priv->parent_q);
         xmlNodeAddContent(node, (pcmkXmlStr) " ");
         xmlNodeAddContent(node, (pcmkXmlStr) content);
     }

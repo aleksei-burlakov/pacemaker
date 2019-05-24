@@ -98,7 +98,7 @@ pe__create_clone_child(pe_resource_t *rsc, pe_working_set_t *data_set)
 
     add_hash_param(child_rsc->meta, XML_RSC_ATTR_INCARNATION_MAX, inc_max);
 
-    print_resource(LOG_TRACE, "Added ", child_rsc, FALSE);
+    print_resource(LOG_TRACE, "Added ", child_rsc, FALSE, NULL);
 
   bail:
     free(inc_num);

@@ -1250,7 +1250,7 @@ find_rsc_op_entry(resource_t * rsc, const char *key)
 }
 
 void
-print_node(const char *pre_text, node_t * node, gboolean details)
+print_node(const char *pre_text, node_t * node, gboolean details, pcmk__output_t *out)
 {
     if (node == NULL) {
         crm_trace("%s%s: <NULL>", pre_text == NULL ? "" : pre_text, pre_text == NULL ? "" : ": ");
@@ -1277,7 +1277,7 @@ print_node(const char *pre_text, node_t * node, gboolean details)
         for (; gIter != NULL; gIter = gIter->next) {
             resource_t *rsc = (resource_t *) gIter->data;
 
-            print_resource(LOG_TRACE, "\t\t", rsc, FALSE);
+            print_resource(LOG_TRACE, "\t\t", rsc, FALSE, out);
         }
     }
 }
@@ -1294,7 +1294,8 @@ print_str_str(gpointer key, gpointer value, gpointer user_data)
 }
 
 void
-print_resource(int log_level, const char *pre_text, resource_t * rsc, gboolean details)
+print_resource(int log_level, const char *pre_text, resource_t * rsc, gboolean details
+               , pcmk__output_t *out)
 {
     long options = pe_print_log | pe_print_pending;
 
@@ -1306,7 +1307,7 @@ print_resource(int log_level, const char *pre_text, resource_t * rsc, gboolean d
     if (details) {
         options |= pe_print_details;
     }
-    rsc->fns->print(rsc, pre_text, options, &log_level, NULL);
+    rsc->fns->print(rsc, pre_text, options, &log_level, out);
 }
 
 void
