@@ -66,7 +66,7 @@ group_unpack(resource_t * rsc, pe_working_set_t * data_set)
                 group_data->first_child = new_rsc;
             }
             group_data->last_child = new_rsc;
-            print_resource(LOG_TRACE, "Added ", new_rsc, FALSE);
+            print_resource(LOG_TRACE, "Added ", new_rsc, FALSE, NULL);
         }
     }
 
@@ -124,7 +124,7 @@ group_print_xml(resource_t * rsc, const char *pre_text, long options, void *prin
     for (; gIter != NULL; gIter = gIter->next) {
         resource_t *child_rsc = (resource_t *) gIter->data;
 
-        child_rsc->fns->print(child_rsc, child_text, options, print_data);
+        child_rsc->fns->print(child_rsc, child_text, options, print_data, NULL);
     }
 
     status_print("%s</group>\n", pre_text);
@@ -132,7 +132,7 @@ group_print_xml(resource_t * rsc, const char *pre_text, long options, void *prin
 }
 
 void
-group_print(resource_t * rsc, const char *pre_text, long options, void *print_data)
+group_print(resource_t * rsc, const char *pre_text, long options, void *print_data, pcmk__output_t* out)
 {
     char *child_text = NULL;
     GListPtr gIter = rsc->children;
@@ -167,7 +167,7 @@ group_print(resource_t * rsc, const char *pre_text, long options, void *print_da
             if (options & pe_print_html) {
                 status_print("<li>\n");
             }
-            child_rsc->fns->print(child_rsc, child_text, options, print_data);
+            child_rsc->fns->print(child_rsc, child_text, options, print_data, out);
             if (options & pe_print_html) {
                 status_print("</li>\n");
             }

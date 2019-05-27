@@ -332,7 +332,7 @@ group_rsc_colocation_rh(pe_resource_t *rsc_lh, pe_resource_t *rsc_rh,
     CRM_CHECK(rsc_lh->variant == pe_native, return);
 
     pe_rsc_trace(rsc_rh, "Processing RH of constraint %s", constraint->id);
-    print_resource(LOG_TRACE, "LHS", rsc_lh, TRUE);
+    print_resource(LOG_TRACE, "LHS", rsc_lh, TRUE, NULL);
 
     if (is_set(rsc_rh->flags, pe_rsc_provisional)) {
         return;

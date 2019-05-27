@@ -70,7 +70,7 @@ pcmk__schedule_actions(pe_working_set_t *data_set, xmlNode *xml_input,
             if (is_set(rsc->flags, pe_rsc_orphan) && rsc->role == RSC_ROLE_STOPPED) {
                 continue;
             }
-            rsc->fns->print(rsc, NULL, pe_print_log, &rsc_log_level);
+            rsc->fns->print(rsc, NULL, pe_print_log, &rsc_log_level, NULL);
         }
     }
 

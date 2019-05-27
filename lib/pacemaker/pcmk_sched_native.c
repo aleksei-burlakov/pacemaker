@@ -456,7 +456,7 @@ native_color(resource_t * rsc, node_t * prefer, pe_working_set_t * data_set)
     }
 
     set_bit(rsc->flags, pe_rsc_allocating);
-    print_resource(alloc_details, "Allocating: ", rsc, FALSE);
+    print_resource(alloc_details, "Allocating: ", rsc, FALSE, NULL);
     dump_node_scores(alloc_details, rsc, "Pre-alloc", rsc->allowed_nodes);
 
     for (gIter = rsc->rsc_cons; gIter != NULL; gIter = gIter->next) {
@@ -497,7 +497,7 @@ native_color(resource_t * rsc, node_t * prefer, pe_working_set_t * data_set)
                                                     pe_weights_rollback);
     }
 
-    print_resource(LOG_TRACE, "Allocating: ", rsc, FALSE);
+    print_resource(LOG_TRACE, "Allocating: ", rsc, FALSE, NULL);
     if (rsc->next_role == RSC_ROLE_STOPPED) {
         pe_rsc_trace(rsc, "Making sure %s doesn't get allocated", rsc->id);
         /* make sure it doesn't come up again */
@@ -559,7 +559,7 @@ native_color(resource_t * rsc, node_t * prefer, pe_working_set_t * data_set)
     }
 
     clear_bit(rsc->flags, pe_rsc_allocating);
-    print_resource(LOG_TRACE, "Allocated ", rsc, TRUE);
+    print_resource(LOG_TRACE, "Allocated ", rsc, TRUE, NULL);
 
     if (rsc->is_remote_node) {
         node_t *remote_node = pe_find_node(data_set->nodes, rsc->id);

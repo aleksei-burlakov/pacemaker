@@ -114,7 +114,7 @@ cli_resource_print_list(pe_working_set_t * data_set, bool raw)
             && rsc->fns->active(rsc, TRUE) == FALSE) {
             continue;
         }
-        rsc->fns->print(rsc, NULL, opts, stdout);
+        rsc->fns->print(rsc, NULL, opts, stdout, NULL);
         found++;
     }
 
@@ -146,7 +146,7 @@ cli_resource_print_operations(const char *rsc_id, const char *host_uname, bool a
 
         rsc = pe_find_resource(data_set->resources, op_rsc);
         if(rsc) {
-            rsc->fns->print(rsc, "", opts, stdout);
+            rsc->fns->print(rsc, "", opts, stdout, NULL);
         } else {
             fprintf(stdout, "Unknown resource %s", op_rsc);
         }
@@ -263,7 +263,7 @@ cli_resource_print(resource_t *rsc, pe_working_set_t *data_set, bool expanded)
     char *rsc_xml = NULL;
     int opts = pe_print_printf | pe_print_pending;
 
-    rsc->fns->print(rsc, NULL, opts, stdout);
+    rsc->fns->print(rsc, NULL, opts, stdout, NULL);
 
     rsc_xml = dump_xml_formatted((!expanded && rsc->orig_xml)?
                                  rsc->orig_xml : rsc->xml);

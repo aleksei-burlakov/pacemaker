@@ -98,7 +98,7 @@ pe__create_clone_child(pe_resource_t *rsc, pe_working_set_t *data_set)
 
     add_hash_param(child_rsc->meta, XML_RSC_ATTR_INCARNATION_MAX, inc_max);
 
-    print_resource(LOG_TRACE, "Added ", child_rsc, FALSE);
+    print_resource(LOG_TRACE, "Added ", child_rsc, FALSE, NULL);
 
   bail:
     free(inc_num);
@@ -326,7 +326,7 @@ clone_print_xml(resource_t * rsc, const char *pre_text, long options, void *prin
     for (; gIter != NULL; gIter = gIter->next) {
         resource_t *child_rsc = (resource_t *) gIter->data;
 
-        child_rsc->fns->print(child_rsc, child_text, options, print_data);
+        child_rsc->fns->print(child_rsc, child_text, options, print_data, NULL);
     }
 
     status_print("%s</clone>\n", pre_text);
@@ -364,7 +364,7 @@ bool is_set_recursive(resource_t * rsc, long long flag, bool any)
 }
 
 void
-clone_print(resource_t * rsc, const char *pre_text, long options, void *print_data)
+clone_print(resource_t * rsc, const char *pre_text, long options, void *print_data, pcmk__output_t* out)
 {
     char *list_text = NULL;
     char *child_text = NULL;
@@ -474,7 +474,7 @@ clone_print(resource_t * rsc, const char *pre_text, long options, void *print_da
             if (options & pe_print_html) {
                 status_print("<li>\n");
             }
-            child_rsc->fns->print(child_rsc, child_text, options, print_data);
+            child_rsc->fns->print(child_rsc, child_text, options, print_data, out);
             if (options & pe_print_html) {
                 status_print("</li>\n");
             }

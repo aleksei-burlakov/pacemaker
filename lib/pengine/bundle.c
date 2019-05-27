@@ -1427,7 +1427,7 @@ print_rsc_in_list(resource_t *rsc, const char *pre_text, long options,
         if (options & pe_print_html) {
             status_print("<li>");
         }
-        rsc->fns->print(rsc, pre_text, options, print_data);
+        rsc->fns->print(rsc, pre_text, options, print_data, NULL);
         if (options & pe_print_html) {
             status_print("</li>\n");
         }
@@ -1514,12 +1514,12 @@ print_bundle_replica(pe__bundle_replica_t *replica, const char *pre_text,
     }
 
     node = pe__current_node(replica->container);
-    common_print(rsc, pre_text, buffer, node, options, print_data);
+    common_print(rsc, pre_text, buffer, node, options, print_data, NULL);
 }
 
 void
 pe__print_bundle(pe_resource_t *rsc, const char *pre_text, long options,
-                 void *print_data)
+                 void *print_data, pcmk__output_t* out)
 {
     pe__bundle_variant_data_t *bundle_data = NULL;
     char *child_text = NULL;
