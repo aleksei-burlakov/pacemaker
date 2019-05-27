@@ -50,6 +50,7 @@ libcrmcommon_la_SOURCES	+= operations.c
 libcrmcommon_la_SOURCES	+= output.c
 libcrmcommon_la_SOURCES	+= output_text.c
 libcrmcommon_la_SOURCES	+= output_xml.c
+libcrmcommon_la_SOURCES	+= output_html.c
 libcrmcommon_la_SOURCES	+= pid.c
 libcrmcommon_la_SOURCES	+= procfs.c
 libcrmcommon_la_SOURCES	+= remote.c
