@@ -101,7 +101,7 @@ html_subprocess_output(pcmk__output_t *out, int exit_status,
         xmlSetProp(node, (pcmkXmlStr) "source", (pcmkXmlStr) "stderr");
     }
 
-    pcmk__html_add_node(out, node);
+    pcmk__xml_add_node(out, node);
     free(rc_as_str);
 }
 
@@ -250,34 +250,4 @@ pcmk__mk_html_output(char **argv) {
     retval->set_bool_prop = html_set_bool_prop;
 
     return retval;
-}
-
-void
-pcmk__html_add_node(pcmk__output_t *out, xmlNodePtr node) {
-    html_private_t *priv = out->priv;
-
-    CRM_ASSERT(priv != NULL);
-    CRM_ASSERT(node != NULL);
-
-    xmlAddChild(g_queue_peek_tail(priv->parent_q), node);
-}
-
-void
-pcmk__html_push_parent(pcmk__output_t *out, xmlNodePtr parent) {
-    html_private_t *priv = out->priv;
-
-    CRM_ASSERT(priv != NULL);
-    CRM_ASSERT(parent != NULL);
-
-    g_queue_push_tail(priv->parent_q, parent);
-}
-
-void
-pcmk__html_pop_parent(pcmk__output_t *out) {
-    html_private_t *priv = out->priv;
-
-    CRM_ASSERT(priv != NULL);
-    CRM_ASSERT(g_queue_get_length(priv->parent_q) > 0);
-
-    g_queue_pop_tail(priv->parent_q);
 }
