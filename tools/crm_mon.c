@@ -4393,12 +4393,12 @@ print_html_status(pe_working_set_t * data_set,
         }
     }
 
-    out->begin_list(out, "html", NULL, NULL);
     out->begin_list(out, "head", NULL, NULL);
     out->list_item(out, "title", "Cluster status");
     out->list_item(out, "meta", NULL);
     out->set_str_prop(out, "http-equv", "refresh");
     out->set_int_prop(out, "content", reconnect_msec / 1000);
+    out->set_str_prop(out, "Content-Type", "text/html");
     out->end_list(out);
     out->begin_list(out, "body", NULL, NULL);
 
@@ -4510,7 +4510,6 @@ print_html_status(pe_working_set_t * data_set,
         print_neg_locations(stream, data_set, out);
     }
 
-    out->end_list(out);
     out->end_list(out);
     pcmk__output_free(out, exit_code);
 

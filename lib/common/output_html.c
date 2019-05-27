@@ -19,14 +19,14 @@
 #include <crm/common/output.h>
 #include <crm/common/xml.h>
 
-typedef struct xml_private_s {
+typedef struct html_private_s {
     xmlNode *root;
     GQueue *parent_q;
-} xml_private_t;
+} html_private_t;
 
 static void
 html_free_priv(pcmk__output_t *out) {
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
 
     if (priv == NULL) {
         return;
@@ -39,13 +39,13 @@ html_free_priv(pcmk__output_t *out) {
 
 static bool
 html_init(pcmk__output_t *out) {
-    xml_private_t *priv = NULL;
+    html_private_t *priv = NULL;
 
     /* If html_init was previously called on this output struct, just return. */
     if (out->priv != NULL) {
         return true;
     } else {
-        out->priv = calloc(1, sizeof(xml_private_t));
+        out->priv = calloc(1, sizeof(html_private_t));
         if (out->priv == NULL) {
             return false;
         }
@@ -53,12 +53,7 @@ html_init(pcmk__output_t *out) {
         priv = out->priv;
     }
 
-    priv->root = create_xml_node(NULL, "pacemaker-result");
-    xmlSetProp(priv->root, (pcmkXmlStr) "api-version", (pcmkXmlStr) PCMK__API_VERSION);
-
-    if (out->request != NULL) {
-        xmlSetProp(priv->root, (pcmkXmlStr) "request", (pcmkXmlStr) out->request);
-    }
+    priv->root = create_xml_node(NULL, "html");
 
     priv->parent_q = g_queue_new();
     g_queue_push_tail(priv->parent_q, priv->root);
@@ -67,36 +62,9 @@ html_init(pcmk__output_t *out) {
 }
 
 static void
-html_finish(pcmk__output_t *out, crm_exit_t exit_status) {
-    htmlNodePtr node;
-    char *rc_as_str = NULL;
-    char *buf = NULL;
-    xml_private_t *priv = out->priv;
-
-    /* If root is NULL, html_init failed and we are being called from pcmk__output_free
-     * in the pcmk__output_new path.
-     */
-    if (priv->root == NULL) {
-        return;
-    }
-
-    rc_as_str = crm_itoa(exit_status);
-
-    node = xmlNewTextChild(priv->root, NULL, (pcmkXmlStr) "status",
-                           (pcmkXmlStr) crm_exit_str(exit_status));
-    xmlSetProp(node, (pcmkXmlStr) "code", (pcmkXmlStr) rc_as_str);
-
-    buf = dump_xml_formatted_with_text(priv->root);
-    fprintf(out->dest, "%s", buf);
-
-    free(rc_as_str);
-    free(buf);
-}
-
-static void
 html_reset(pcmk__output_t *out) {
     char *buf = NULL;
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
 
     CRM_ASSERT(priv != NULL);
 
@@ -113,7 +81,7 @@ html_subprocess_output(pcmk__output_t *out, int exit_status,
                       const char *proc_stdout, const char *proc_stderr) {
     htmlNodePtr node, child_node;
     char *rc_as_str = NULL;
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
     CRM_ASSERT(priv != NULL);
 
     rc_as_str = crm_itoa(exit_status);
@@ -147,7 +115,7 @@ static void
 html_output_xml(pcmk__output_t *out, const char *name, const char *buf) {
     htmlNodePtr parent = NULL;
     htmlNodePtr cdata_node = NULL;
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
 
     CRM_ASSERT(priv != NULL);
 
@@ -161,18 +129,17 @@ static void
 html_begin_list(pcmk__output_t *out, const char *name,
                const char *singular_noun, const char *plural_noun) {
     htmlNodePtr list_node = NULL;
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
 
     CRM_ASSERT(priv != NULL);
 
     list_node = create_xml_node(g_queue_peek_tail(priv->parent_q), name);
-    // xmlSetProp(list_node, (pcmkXmlStr) "name", (pcmkXmlStr) name);
     g_queue_push_tail(priv->parent_q, list_node);
 }
 
 static void
 html_list_item(pcmk__output_t *out, const char *name, const char *content) {
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
     
     CRM_ASSERT(priv != NULL);
 
@@ -187,22 +154,16 @@ html_list_item(pcmk__output_t *out, const char *name, const char *content) {
 
 static void
 html_end_list(pcmk__output_t *out) {
-    char *buf = NULL;
-    xml_private_t *priv = out->priv;
-    htmlNodePtr node;
+    html_private_t *priv = out->priv;
 
     CRM_ASSERT(priv != NULL);
-
-    node = g_queue_pop_tail(priv->parent_q);
-    buf = crm_strdup_printf("%lu", xmlChildElementCount(node));
-    //xmlSetProp(node, (pcmkXmlStr) "count", (pcmkXmlStr) buf);
-    free(buf);
+    g_queue_pop_tail(priv->parent_q);
 }
 
 static void
 html_set_str_prop(pcmk__output_t *out, const char *id, const char *value)
 {
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
     htmlNodePtr xml_node = g_queue_peek_tail(priv->parent_q);
     if (xml_node->children)
         xml_node = xmlGetLastChild(xml_node);
@@ -229,6 +190,31 @@ static void
 html_set_bool_prop(pcmk__output_t *out, const char *id, int condition)
 {
     html_set_str_prop(out, id, condition ? "true" : "false");
+}
+
+static void
+html_finish(pcmk__output_t *out, crm_exit_t exit_status) {
+    char *rc_as_str = NULL;
+    char *buf = NULL;
+    html_private_t *priv = out->priv;
+
+    /* If root is NULL, html_init failed and we are being called from pcmk__output_free
+     * in the pcmk__output_new path.
+     */
+    if (priv->root == NULL) {
+        return;
+    }
+
+    rc_as_str = crm_itoa(exit_status);
+
+    html_list_item(out, "meta", NULL);
+    html_set_str_prop(out, "status", crm_exit_str(exit_status));
+
+    buf = dump_xml_formatted_with_text(priv->root);
+    fprintf(out->dest, "%s", buf);
+
+    free(rc_as_str);
+    free(buf);
 }
 
 pcmk__output_t *
@@ -268,7 +254,7 @@ pcmk__mk_html_output(char **argv) {
 
 void
 pcmk__html_add_node(pcmk__output_t *out, xmlNodePtr node) {
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
 
     CRM_ASSERT(priv != NULL);
     CRM_ASSERT(node != NULL);
@@ -278,7 +264,7 @@ pcmk__html_add_node(pcmk__output_t *out, xmlNodePtr node) {
 
 void
 pcmk__html_push_parent(pcmk__output_t *out, xmlNodePtr parent) {
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
 
     CRM_ASSERT(priv != NULL);
     CRM_ASSERT(parent != NULL);
@@ -288,7 +274,7 @@ pcmk__html_push_parent(pcmk__output_t *out, xmlNodePtr parent) {
 
 void
 pcmk__html_pop_parent(pcmk__output_t *out) {
-    xml_private_t *priv = out->priv;
+    html_private_t *priv = out->priv;
 
     CRM_ASSERT(priv != NULL);
     CRM_ASSERT(g_queue_get_length(priv->parent_q) > 0);
