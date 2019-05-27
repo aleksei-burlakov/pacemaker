@@ -196,6 +196,38 @@ xml_end_list(pcmk__output_t *out) {
     free(buf);
 }
 
+static void
+xml_set_str_prop(pcmk__output_t *out, const char *id, const char *value)
+{
+    xml_private_t *priv = out->priv;
+    xmlNodePtr xml_node = g_queue_peek_tail(priv->parent_q);
+    if (xml_node->children)
+        xml_node = xmlGetLastChild(xml_node);
+    xmlSetProp(xml_node, (pcmkXmlStr) id, (pcmkXmlStr) (value ? value : ""));
+}
+
+static void
+xml_set_int_prop(pcmk__output_t *out, const char *id, int value)
+{
+    char *str = crm_itoa(value);
+    xml_set_str_prop(out, id, str);
+    free(str);
+}
+
+static void
+xml_set_float_prop(pcmk__output_t *out, const char *id, double value)
+{
+    char *str = crm_ftoa(value);
+    xml_set_str_prop(out, id, str);
+    free(str);
+}
+
+static void
+xml_set_bool_prop(pcmk__output_t *out, const char *id, int condition)
+{
+    xml_set_str_prop(out, id, condition ? "true" : "false");
+}
+
 pcmk__output_t *
 pcmk__mk_xml_output(char **argv) {
     pcmk__output_t *retval = calloc(1, sizeof(pcmk__output_t));
@@ -222,6 +254,11 @@ pcmk__mk_xml_output(char **argv) {
     retval->begin_list = xml_begin_list;
     retval->list_item = xml_list_item;
     retval->end_list = xml_end_list;
+
+    retval->set_str_prop = xml_set_str_prop;
+    retval->set_int_prop = xml_set_int_prop;
+    retval->set_float_prop = xml_set_float_prop;
+    retval->set_bool_prop = xml_set_bool_prop;
 
     return retval;
 }
