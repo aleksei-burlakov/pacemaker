@@ -103,6 +103,11 @@ void clone_print(resource_t * rsc, const char *pre_text, long options, void *pri
 void pe__print_bundle(pe_resource_t *rsc, const char *pre_text, long options,
                       void *print_data);
 
+void native_output(resource_t * rsc, long options, pcmk__output_t* out);
+void group_output(resource_t * rsc, long options, pcmk__output_t* out);
+void clone_output(resource_t * rsc, long options, pcmk__output_t* out);
+void pe__output_bundle(pe_resource_t *rsc, long options, pcmk__output_t* out);
+
 void native_free(resource_t * rsc);
 void group_free(resource_t * rsc);
 void clone_free(resource_t * rsc);
@@ -174,8 +179,10 @@ GHashTable *node_hash_dup(GHashTable * hash);
 
 /* Printing functions for debug */
 extern void print_node(const char *pre_text, node_t * node, gboolean details);
+extern void output_node(node_t * node, gboolean details, pcmk__output_t *out);
 
 extern void print_resource(int log_level, const char *pre_text, resource_t * rsc, gboolean details);
+extern void output_resource(int log_level, resource_t * rsc, gboolean details, pcmk__output_t *out);
 
 extern void dump_node_scores_worker(int level, const char *file, const char *function, int line,
                                     resource_t * rsc, const char *comment, GHashTable * nodes);
@@ -341,6 +348,8 @@ node_t *pe_create_node(const char *id, const char *uname, const char *type,
                        const char *score, pe_working_set_t * data_set);
 bool remote_id_conflict(const char *remote_name, pe_working_set_t *data);
 void common_print(resource_t * rsc, const char *pre_text, const char *name, node_t *node, long options, void *print_data);
+void common_output(resource_t * rsc, const char *name, node_t *node
+                  , long options, void *print_data, pcmk__output_t *out);
 pe_resource_t *pe__find_bundle_replica(const pe_resource_t *bundle,
                                        const pe_node_t *node);
 bool pe__bundle_needs_remote_name(pe_resource_t *rsc);

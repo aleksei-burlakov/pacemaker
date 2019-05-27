@@ -25,6 +25,7 @@ extern "C" {
 #  include <crm/crm.h>              // GListPtr
 #  include <crm/common/iso8601.h>
 #  include <crm/pengine/common.h>
+#  include <crm/common/output.h>
 
 typedef struct pe_node_s pe_node_t;
 typedef struct pe_action_s pe_action_t;
@@ -47,6 +48,7 @@ typedef struct resource_object_functions_s {
     char *(*parameter) (pe_resource_t*, pe_node_t*, gboolean, const char*,
                         pe_working_set_t*);
     void (*print) (pe_resource_t*, const char*, long, void*);
+    void (*output) (pe_resource_t*, long, pcmk__output_t*);
     gboolean (*active) (pe_resource_t*, gboolean);
     enum rsc_role_e (*state) (const pe_resource_t*, gboolean);
     pe_node_t *(*location) (const pe_resource_t*, GList**, int);
