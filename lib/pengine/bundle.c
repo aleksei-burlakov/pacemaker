@@ -1621,6 +1621,86 @@ pe__bundle_html(pcmk__output_t *out, va_list args)
 }
 
 static void
+pe__bundle_replica_output_log(pcmk__output_t *out, pe__bundle_replica_t *replica,
+                              const char *pre_text, long options, int log_level)
+{
+    node_t *node = NULL;
+    pe_resource_t *rsc = replica->child;
+
+    int offset = 0;
+    char buffer[LINE_MAX];
+
+    if(rsc == NULL) {
+        rsc = replica->container;
+    }
+
+    if (replica->remote) {
+        offset += snprintf(buffer + offset, LINE_MAX - offset, "%s",
+                           rsc_printable_id(replica->remote));
+    } else {
+        offset += snprintf(buffer + offset, LINE_MAX - offset, "%s",
+                           rsc_printable_id(replica->container));
+    }
+    if (replica->ipaddr) {
+        offset += snprintf(buffer + offset, LINE_MAX - offset, " (%s)",
+                           replica->ipaddr);
+    }
+
+    node = pe__current_node(replica->container);
+    pe__common_output_log(out, rsc, pre_text, buffer, node, options, log_level);
+}
+
+int
+pe__bundle_log(pcmk__output_t *out, va_list args)
+{
+    long options = va_arg(args, int);
+    resource_t *rsc = va_arg(args, resource_t *);
+    const char *pre_text = va_arg(args, char *);
+    int log_level = va_arg(args, int);
+
+    pe__bundle_variant_data_t *bundle_data = NULL;
+    char *child_text = NULL;
+
+    CRM_ASSERT(rsc != NULL);
+
+    get_bundle_variant_data(bundle_data, rsc);
+
+    if (pre_text == NULL) {
+        pre_text = " ";
+    }
+
+    do_crm_log(log_level, "%sContainer bundle%s: %s [%s]%s%s\n",
+            pre_text, ((bundle_data->nreplicas > 1)? " set" : ""),
+            rsc->id, bundle_data->image,
+            is_set(rsc->flags, pe_rsc_unique) ? " (unique)" : "",
+            is_set(rsc->flags, pe_rsc_managed) ? "" : " (unmanaged)");
+
+    for (GList *gIter = bundle_data->replicas; gIter != NULL;
+         gIter = gIter->next) {
+        pe__bundle_replica_t *replica = gIter->data;
+
+        CRM_ASSERT(replica);
+
+        if (is_set(options, pe_print_implicit)) {
+            child_text = crm_strdup_printf("     %s", pre_text);
+            if(g_list_length(bundle_data->replicas) > 1) {
+                do_crm_log(log_level, "  %sReplica[%d]\n", pre_text, replica->offset);
+            }
+
+            out->message(out, crm_element_name(replica->ip->xml), options, replica->ip, child_text);
+            out->message(out, crm_element_name(replica->child->xml), options, replica->child, child_text);
+            out->message(out, crm_element_name(replica->container->xml), options, replica->container, child_text);
+            out->message(out, crm_element_name(replica->remote->xml), options, replica->remote, child_text);
+        } else {
+            child_text = crm_strdup_printf("%s  ", pre_text);
+            pe__bundle_replica_output_log(out, replica, child_text, options, log_level);
+        }
+        free(child_text);
+    }
+    return 0;
+}
+
+static void
 pe__bundle_replica_output_text(pcmk__output_t *out, pe__bundle_replica_t *replica,
                                const char *pre_text, long options)
 {
@@ -1686,7 +1766,8 @@ pe__bundle_text(pcmk__output_t *out, va_list args)
                 fprintf(out->dest, "  %sReplica[%d]\n", pre_text, replica->offset);
             }
 
-            out->message(out, crm_element_name(replica->ip->xml), options, replica->ip, child_text);
+            out->message(out, crm_element_name(replica->ip->xml), options, replica->ip,
+child_text);
             out->message(out, crm_element_name(replica->child->xml), options, replica->child, child_text);
             out->message(out, crm_element_name(replica->container->xml), options, replica->container, child_text);
             out->message(out, crm_element_name(replica->remote->xml), options, replica->remote, child_text);

@@ -16,16 +16,26 @@
 #include <crm/common/output.h>
 #include <crm/common/xml.h>
 
+// FIXME! Do we really need the text_list_data_s ?
 typedef struct text_list_data_s {
     unsigned int len;
     char *singular_noun;
     char *plural_noun;
 } text_list_data_t;
 
+/* FIXME! Do we need private_log_message_s ?
+typedef struct private_log_message_s {
+    int level;
+    const char *file;
+    const char *function;
+    int line;
+    const char *text;
+} private_log_message_t;
+*/
+
 typedef struct private_data_s {
-    //xmlNode *root;
+    //private_log_message_t *log_message; FIXME! Remove it
     GQueue *parent_q;
-    //GSList *errors;
 } private_data_t;
 
 static void
@@ -36,8 +46,8 @@ log_free_priv(pcmk__output_t *out) {
         return;
     }
 
+    //free(priv->log_message); FIXME! Remove it
     g_queue_free(priv->parent_q);
-    //g_slist_free(priv->errors);
     free(priv);
 }
 
@@ -58,7 +68,6 @@ log_init(pcmk__output_t *out) {
     }
 
     priv->parent_q = g_queue_new();
-    //priv->errors = NULL;
 
     return true;
 }

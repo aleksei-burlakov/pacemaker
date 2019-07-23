@@ -109,12 +109,15 @@ int pe__name_and_nvpairs_xml(pcmk__output_t *out, bool is_list, const char *tag_
 
 int pe__clone_xml(pcmk__output_t *out, va_list args);
 int pe__clone_html(pcmk__output_t *out, va_list args);
+int pe__clone_log(pcmk__output_t *out, va_list args);
 int pe__clone_text(pcmk__output_t *out, va_list args);
 int pe__bundle_xml(pcmk__output_t *out, va_list args);
 int pe__bundle_html(pcmk__output_t *out, va_list args);
+int pe__bundle_log(pcmk__output_t *out, va_list args);
 int pe__bundle_text(pcmk__output_t *out, va_list args);
 int pe__resource_xml(pcmk__output_t *out, va_list args);
 int pe__resource_html(pcmk__output_t *out, va_list args);
+int pe__resource_log(pcmk__output_t *out, va_list args);
 int pe__resource_text(pcmk__output_t *out, va_list args);
 
 void native_free(resource_t * rsc);
@@ -356,6 +359,8 @@ void pe__rscs_brief_output_text(pcmk__output_t *out, GListPtr rsc_list, const ch
                                 long options, gboolean print_all);
 void pe__rscs_brief_output_html(pcmk__output_t *out, GListPtr rsc_list,
                                 long options, gboolean print_all);
+void pe__rscs_brief_output_log(pcmk__output_t *out, GListPtr rsc_list, const char *pre_text,
+                                long options, gboolean print_all, int log_level);
 void pe_fence_node(pe_working_set_t * data_set, node_t * node, const char *reason);
 
 node_t *pe_create_node(const char *id, const char *uname, const char *type,
@@ -364,6 +369,8 @@ bool remote_id_conflict(const char *remote_name, pe_working_set_t *data);
 void common_print(resource_t * rsc, const char *pre_text, const char *name, node_t *node, long options, void *print_data);
 void pe__common_output_text(pcmk__output_t *out, resource_t * rsc, const char *pre_text, const char *name, node_t *node, long options);
 void pe__common_output_html(pcmk__output_t *out, resource_t * rsc, const char *name, node_t *node, long options);
+void pe__common_output_log(pcmk__output_t *out, resource_t * rsc, const char *pre_text,
+                           const char *name, node_t *node, long options, int log_level);
 pe_resource_t *pe__find_bundle_replica(const pe_resource_t *bundle,
                                        const pe_node_t *node);
 bool pe__bundle_needs_remote_name(pe_resource_t *rsc);
