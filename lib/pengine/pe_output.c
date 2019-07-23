@@ -96,6 +96,37 @@ pe__group_html(pcmk__output_t *out, va_list args)
 }
 
 static int
+pe__group_log(pcmk__output_t *out, va_list args)
+{
+    long options = va_arg(args, long);
+    resource_t *rsc = va_arg(args, resource_t *);
+    const char *pre_text = va_arg(args, char *);
+    char *child_text = NULL;
+
+    if (pre_text == NULL) {
+        pre_text = " ";
+    }
+
+    child_text = crm_concat(pre_text, "   ", ' ');
+
+    pcmk__output_do_crm_log(out, "%sResource Group: %s", pre_text ? pre_text : "", rsc->id);
+
+    if (options & pe_print_brief) {
+        pe__rscs_brief_output_log(out, rsc->children, child_text, options, TRUE);
+
+    } else {
+        for (GListPtr gIter = rsc->children; gIter; gIter = gIter->next) {
+            resource_t *child_rsc = (resource_t *) gIter->data;
+
+            out->message(out, crm_element_name(child_rsc->xml), options, child_rsc, child_text);
+        }
+    }
+
+    free(child_text);
+    return 0;
+}
+
+static int
 pe__group_text(pcmk__output_t *out, va_list args)
 {
     long options = va_arg(args, long);
@@ -128,15 +159,19 @@ pe__group_text(pcmk__output_t *out, va_list args)
 static pcmk__message_entry_t fmt_functions[] = {
     { "bundle", "xml",  pe__bundle_xml },
     { "bundle", "html",  pe__bundle_html },
+    { "bundle", "log",  pe__bundle_log },
     { "bundle", "text",  pe__bundle_text },
     { "clone", "xml",  pe__clone_xml },
     { "clone", "html",  pe__clone_html },
+    { "clone", "log",  pe__clone_log },
     { "clone", "text",  pe__clone_text },
     { "group", "xml",  pe__group_xml },
     { "group", "html",  pe__group_html },
+    { "group", "log",  pe__group_log },
     { "group", "text",  pe__group_text },
     { "primitive", "xml",  pe__resource_xml },
     { "primitive", "html",  pe__resource_html },
+    { "primitive", "log",  pe__resource_log },
     { "primitive", "text",  pe__resource_text },
 
     { NULL, NULL, NULL }
@@ -184,16 +219,22 @@ pe__output_node(node_t *node, gboolean details, pcmk__output_t *out)
 }
 
 void
-pe__output_resource(int log_level, resource_t *rsc, gboolean details, pcmk__output_t  *out)
+pe__output_resource(int log_level, resource_t *rsc, gboolean details, pcmk__output_t *out)
 {
     long options = pe_print_log | pe_print_pending;
+    int old_log_level = pcmk__output_get_log_level(out);
 
     if (rsc == NULL) {
-        do_crm_log(log_level - 1, "<NULL>");
+        pcmk__output_set_log_level(out, log_level - 1);
+        pcmk__output_do_crm_log(out, "<NULL>");
+        pcmk__output_set_log_level(out, old_log_level);
         return;
     }
     if (details) {
         options |= pe_print_details;
     }
+
+    pcmk__output_set_log_level(out, log_level);
     out->message(out, crm_element_name(rsc->xml), options, rsc);
+    pcmk__output_set_log_level(out, old_log_level);
 }
