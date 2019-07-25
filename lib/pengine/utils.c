@@ -1296,7 +1296,9 @@ print_str_str(gpointer key, gpointer value, gpointer user_data)
 void
 print_resource(int log_level, const char *pre_text, resource_t * rsc, gboolean details)
 {
-    long options = pe_print_log | pe_print_pending;
+    long options = pe_print_pending;
+    pcmk__output_t *out = NULL;
+    const char *argv[] = {""};
 
     if (rsc == NULL) {
         do_crm_log(log_level - 1, "%s%s: <NULL>",
@@ -1306,7 +1308,10 @@ print_resource(int log_level, const char *pre_text, resource_t * rsc, gboolean d
     if (details) {
         options |= pe_print_details;
     }
-    rsc->fns->print(rsc, pre_text, options, &log_level);
+    pcmk__output_new(&out, "log", NULL, (char **)argv);
+    pe__register_messages(out);
+    out->message(out, crm_element_name(rsc->xml), options, rsc, pre_text);
+    pcmk__output_free(out);
 }
 
 void
