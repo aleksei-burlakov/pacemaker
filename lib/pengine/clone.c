@@ -838,7 +838,7 @@ pe__clone_text(pcmk__output_t *out, va_list args)
 
     child_text = crm_concat(pre_text, "   ", ' ');
 
-    fprintf(out->dest, "%sClone Set: %s [%s]%s%s%s",
+    fprintf(out->dest, "%sClone Set: %s [%s]%s%s%s\n",
             pre_text ? pre_text : "", rsc->id, ID(clone_data->xml_obj_child),
             is_set(rsc->flags, pe_rsc_promotable) ? " (promotable)" : "",
             is_set(rsc->flags, pe_rsc_unique) ? " (unique)" : "",
