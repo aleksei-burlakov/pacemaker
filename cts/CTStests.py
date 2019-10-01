@@ -1412,6 +1412,22 @@ class ComponentFail(CTSTest):
             tmpPats, self.Env["DeadTime"] + self.Env["StableTime"] + self.Env["StartTime"])
         watch.setwatch()
 
+        if self.CM.Env["have_systemd"]:
+            temporary_corosync_service = """
+[Unit]
+Description=Temporary Corosync Cluster Engine to delay restarting the service
+
+[Service]
+ExecStart=/usr/share/corosync/corosync start
+ExecStop=/usr/share/corosync/corosync stop
+Type=forking
+Restart=always
+RestartSec=70
+"""
+            os.system("cat <<-END >/tmp/corosync.service\n%s\nEND" % (temporary_corosync_service))
+            self.CM.install_helper("corosync.service", destdir="/run/systemd/system/", sourcedir="/tmp")
+            self.CM.systemctl_daemon_reload()
+
         # kill the component
         chosen.kill(node)
 
@@ -1430,6 +1446,9 @@ class ComponentFail(CTSTest):
             self.debug("Found: " + repr(shot))
             self.okerrpatterns.append(self.templates["Pat:Fencing_start"] % node)
 
+            self.CM.uninstall_helper("corosync.service", dir="/run/systemd/system/")
+            self.CM.systemctl_daemon_reload()
+
             if self.Env["at-boot"] == 0:
                 self.CM.ShouldBeStatus[node] = "down"
 
@@ -1444,6 +1463,9 @@ class ComponentFail(CTSTest):
 
         self.debug("Waiting for the cluster to re-stabilize with all nodes")
         is_stable = self.CM.cluster_stable(self.Env["StartTime"])
+
+        self.CM.uninstall_helper("corosync.service", dir="/run/systemd/system/")
+        self.CM.systemctl_daemon_reload()
 
         if not matched:
             return self.failure("Didn't find all expected %s patterns" % chosen.name)

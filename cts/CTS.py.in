@@ -351,6 +351,47 @@ class ClusterManager(UserDict):
         for node in self.Env["nodes"]:
             self.rsh(node, CTSvars.CRM_DAEMON_DIR + "/cts-support " + command)
 
+    def install_helper(self, filename, destdir=None, nodes=None, sourcedir=None):
+        if sourcedir == None:
+            sourcedir = CTSvars.CTS_home
+        file_with_path = "%s/%s" % (sourcedir, filename)
+        if not nodes:
+            nodes = self.Env["nodes"]
+
+        if not destdir:
+            destdir = CTSvars.CTS_home
+
+        self.debug("Installing %s to %s on %s" % (filename, destdir, repr(self.Env["nodes"])))
+        for node in nodes:
+            self.rsh(node, "mkdir -p %s" % destdir)
+            self.rsh.cp(file_with_path, "root@%s:%s/%s" % (node, destdir, filename))
+        return file_with_path
+
+    def uninstall_helper(self, filename, dir=None, nodes=None):
+        if not nodes:
+            nodes = self.Env["nodes"]
+
+        if not dir:
+            dir = CTSvars.CTS_home
+
+        self.debug("Uninstalling %s from %s on %s" % (filename, dir, repr(self.Env["nodes"])))
+        for node in nodes:
+            rc = self.rsh(node, "rm -f %s/%s" % (dir, filename))
+            if rc != 0:
+                return rc
+        return 0
+
+    def systemctl_daemon_reload(self, nodes=None):
+        if not nodes:
+            nodes = self.Env["nodes"]
+
+        self.debug("Reloading the system manager configuration")
+        for node in nodes:
+            rc = self.rsh(node, "systemctl daemon-reload")
+            if rc != 0:
+                return rc
+        return 0
+
     def install_config(self, node):
         return None
 
