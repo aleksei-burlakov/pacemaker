@@ -6,6 +6,9 @@
  * This source code is licensed under the GNU Lesser General Public License
  * version 2.1 or later (LGPLv2.1+) WITHOUT ANY WARRANTY.
  */
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
 
 #include <ctype.h>
 #include <libxml/HTMLtree.h>
@@ -25,7 +28,7 @@ typedef struct private_log_message_s {
     char filename[LINE_MAX];
     char function[LINE_MAX];
     uint32_t lineno;
-    char text[LINE_MAX];
+    char* text;
 } private_log_message_t;
 
 typedef struct private_data_s {
@@ -105,18 +108,18 @@ G_GNUC_PRINTF(2, 3)
 static void
 log_err(pcmk__output_t *out, const char *format, ...) {
     va_list ap;
-    int offset = 0;
-    char buffer[LINE_MAX];
+    char* buffer = NULL;
 
     va_start(ap, format);
 
     /* Informational output does not get indented, to separate it from other
      * potentially indented list output.
      */
-    offset += vsnprintf(buffer + offset, LINE_MAX - offset, format, ap);
+    vasprintf(&buffer, format, ap);
     va_end(ap);
 
     crm_err(buffer);
+    free(buffer);
 }
 
 G_GNUC_PRINTF(2, 3)
@@ -239,7 +242,8 @@ void pcmk__output_crm_log(pcmk__output_t *out, const char *function, const char 
     message->lineno = lineno;
 
     va_start(ap, lineno);
-    vsnprintf(message->text, LINE_MAX, format, ap);
+    // FIXME! vasprintf will allocate memory into message->text
+    vasprintf(&message->text, format, ap);
     va_end(ap);
 
     /* save the message for the future use */

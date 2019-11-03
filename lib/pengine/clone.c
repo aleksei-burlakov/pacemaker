@@ -897,10 +897,13 @@ pe__clone_log(pcmk__output_t *out, va_list args)
         active_instances++;
     }
 
-    pe__short_output_log(out, list_text, child_text, "Masters", NULL, options);
-    g_list_free(master_list);
-    free(list_text);
-    list_text = NULL;
+    if (list_text != NULL) {
+        // FIXME! TESTME! Are you missing the log-level here?
+        out->list_item(out, "Masters", "[%s ]", list_text);
+        g_list_free(master_list);
+        free(list_text);
+        list_text = NULL;
+    }
 
     /* Started/Slaves */
     started_list = g_list_sort(started_list, sort_node_uname);
@@ -911,16 +914,21 @@ pe__clone_log(pcmk__output_t *out, va_list args)
         active_instances++;
     }
 
-    if (is_set(rsc->flags, pe_rsc_promotable)) {
-        enum rsc_role_e role = configured_role(rsc);
+    if (list_text != NULL) {
+        if (is_set(rsc->flags, pe_rsc_promotable)) {
+            enum rsc_role_e role = configured_role(rsc);
 
-        if(role == RSC_ROLE_SLAVE) {
-            pe__short_output_log(out, list_text, child_text, "Slaves (target-role)", NULL, options);
+            if(role == RSC_ROLE_SLAVE) {
+                // FIXME! TESTME!
+                out->list_item(out, "Slaves (target-role)", "[%s ]", list_text);
+            } else {
+                // FIXME! TESTME!
+                out->list_item(out, "Slaves", "[%s ]", list_text);
+            }
         } else {
-            pe__short_output_log(out, list_text, child_text, "Slaves", NULL, options);
+            // FIXME! TESTME!
+            out->list_item(out, "Started", "[%s ]", list_text);
         }
-    } else {
-        pe__short_output_log(out, list_text, child_text, "Started", NULL, options);
     }
 
     g_list_free(started_list);
@@ -963,8 +971,11 @@ pe__clone_log(pcmk__output_t *out, va_list args)
             g_list_free(list);
         }
 
-        pe__short_output_log(out, stopped_list, child_text, state, NULL, options);
-        free(stopped_list);
+        if (stopped_list != NULL) {
+            // FIXME! TESTME!
+            out->list_item(out, state, "[%s ]", stopped_list);
+            free(stopped_list);
+        }
     }
 
     free(child_text);

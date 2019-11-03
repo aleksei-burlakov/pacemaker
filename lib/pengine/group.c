@@ -230,7 +230,7 @@ pe__group_html(pcmk__output_t *out, va_list args)
     return 0;
 }
 
-static int
+int
 pe__group_log(pcmk__output_t *out, va_list args)
 {
     long options = va_arg(args, long);
@@ -247,7 +247,8 @@ pe__group_log(pcmk__output_t *out, va_list args)
     pcmk__output_do_crm_log(out, "%sResource Group: %s", pre_text ? pre_text : "", rsc->id);
 
     if (options & pe_print_brief) {
-        pe__rscs_brief_output_log(out, rsc->children, child_text, options, TRUE);
+        // FIXME! TESTME!
+        pe__rscs_brief_output(out, rsc->children, options, TRUE);
 
     } else {
         for (GListPtr gIter = rsc->children; gIter; gIter = gIter->next) {

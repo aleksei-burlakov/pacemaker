@@ -877,14 +877,17 @@ pe__common_output_log(pcmk__output_t *out, resource_t * rsc, const char *pre_tex
         }
     }
 
-    if (options & pe_print_details) {
-        g_hash_table_foreach(rsc->parameters, pe__native_output_attr_log, out);
+    if (is_set(options, pe_print_details)) {
+        /* FIXME!!! Look what happens in pe__common_output_text:945
+         * and implement it here */
+        //g_hash_table_foreach(rsc->parameters, pe__native_output_attr_log, out);
     }
 
-    if (options & pe_print_dev) {
+    if (is_set(options, pe_print_dev)) {
         GHashTableIter iter;
         node_t *n = NULL;
 
+        // FIXME! Use the out->list_item instead of pcmk__output_do_crm_log
         pcmk__output_do_crm_log(out, "%s\t(%s%svariant=%s, priority=%f)", pre_text,
                      is_set(rsc->flags, pe_rsc_provisional) ? "provisional, " : "",
                      is_set(rsc->flags, pe_rsc_runnable) ? "" : "non-startable, ",
@@ -896,10 +899,11 @@ pe__common_output_log(pcmk__output_t *out, resource_t * rsc, const char *pre_tex
         }
     }
 
-    if (options & pe_print_max_details) {
+    if (is_set(options, pe_print_max_details)) {
         GHashTableIter iter;
         node_t *n = NULL;
 
+        // FIXME! use out->begin_list instead of pcmk__output_do_crm_log
         pcmk__output_do_crm_log(out, "%s\t=== Allowed Nodes\n", pre_text);
         g_hash_table_iter_init(&iter, rsc->allowed_nodes);
         while (g_hash_table_iter_next(&iter, NULL, (void **)&n)) {
