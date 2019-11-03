@@ -104,15 +104,19 @@ pe__ticket_xml(pcmk__output_t *out, va_list args) {
 static pcmk__message_entry_t fmt_functions[] = {
     { "bundle", "xml",  pe__bundle_xml },
     { "bundle", "html",  pe__bundle_html },
+    { "bundle", "log",  pe__bundle_log },
     { "bundle", "text",  pe__bundle_text },
     { "clone", "xml",  pe__clone_xml },
     { "clone", "html",  pe__clone_html },
+    { "clone", "log",  pe__clone_log },
     { "clone", "text",  pe__clone_text },
     { "group", "xml",  pe__group_xml },
     { "group", "html",  pe__group_html },
+    { "group", "log",  pe__group_log },
     { "group", "text",  pe__group_text },
     { "primitive", "xml",  pe__resource_xml },
     { "primitive", "html",  pe__resource_html },
+    { "primitive", "log",  pe__resource_log },
     { "primitive", "text",  pe__resource_text },
     { "ticket", "html", pe__ticket_html },
     { "ticket", "text", pe__ticket_text },
@@ -161,13 +165,21 @@ void
 pe__output_resource(int log_level, resource_t *rsc, gboolean details, pcmk__output_t  *out)
 {
     long options = pe_print_log | pe_print_pending;
+    int old_log_level = pcmk__output_get_log_level(out);
 
     if (rsc == NULL) {
-        do_crm_log(log_level - 1, "<NULL>");
+        pcmk__output_set_log_level(out, log_level - 1);
+        pcmk__output_do_crm_log(out, "<NULL>");
+        pcmk__output_set_log_level(out, old_log_level);
         return;
     }
     if (details) {
         options |= pe_print_details;
     }
+    /* FIXME! Is there a way to do it better than
+     * set the log level before calling the message
+     * and then reset the level after calling the message */
+    pcmk__output_set_log_level(out, log_level);
     out->message(out, crm_element_name(rsc->xml), options, rsc);
+    pcmk__output_set_log_level(out, old_log_level);
 }

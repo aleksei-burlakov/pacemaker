@@ -230,6 +230,37 @@ pe__group_html(pcmk__output_t *out, va_list args)
     return 0;
 }
 
+static int
+pe__group_log(pcmk__output_t *out, va_list args)
+{
+    long options = va_arg(args, long);
+    resource_t *rsc = va_arg(args, resource_t *);
+    const char *pre_text = va_arg(args, char *);
+    char *child_text = NULL;
+
+    if (pre_text == NULL) {
+        pre_text = " ";
+    }
+
+    child_text = crm_concat(pre_text, "   ", ' ');
+
+    pcmk__output_do_crm_log(out, "%sResource Group: %s", pre_text ? pre_text : "", rsc->id);
+
+    if (options & pe_print_brief) {
+        pe__rscs_brief_output_log(out, rsc->children, child_text, options, TRUE);
+
+    } else {
+        for (GListPtr gIter = rsc->children; gIter; gIter = gIter->next) {
+            resource_t *child_rsc = (resource_t *) gIter->data;
+
+            out->message(out, crm_element_name(child_rsc->xml), options, child_rsc, child_text);
+        }
+    }
+
+    free(child_text);
+    return 0;
+}
+
 int
 pe__group_text(pcmk__output_t *out, va_list args)
 {
