@@ -125,16 +125,19 @@ typedef struct pcmk__supported_format_s {
  */
 
 extern GOptionEntry pcmk__html_output_entries[];
+extern GOptionEntry pcmk__log_output_entries[];
 extern GOptionEntry pcmk__none_output_entries[];
 extern GOptionEntry pcmk__text_output_entries[];
 extern GOptionEntry pcmk__xml_output_entries[];
 
 pcmk__output_t *pcmk__mk_html_output(char **argv);
+pcmk__output_t *pcmk__mk_log_output(char **argv);
 pcmk__output_t *pcmk__mk_none_output(char **argv);
 pcmk__output_t *pcmk__mk_text_output(char **argv);
 pcmk__output_t *pcmk__mk_xml_output(char **argv);
 
 #define PCMK__SUPPORTED_FORMAT_HTML { "html", pcmk__mk_html_output, pcmk__html_output_entries }
+#define PCMK__SUPPORTED_FORMAT_LOG  { "log", pcmk__mk_log_output, pcmk__log_output_entries }
 #define PCMK__SUPPORTED_FORMAT_NONE { "none", pcmk__mk_none_output, pcmk__none_output_entries }
 #define PCMK__SUPPORTED_FORMAT_TEXT { "text", pcmk__mk_text_output, pcmk__text_output_entries }
 #define PCMK__SUPPORTED_FORMAT_XML  { "xml", pcmk__mk_xml_output, pcmk__xml_output_entries }
@@ -700,6 +703,54 @@ pcmk__output_create_html_node(pcmk__output_t *out, const char *element_name, con
 void
 pcmk__html_add_header(xmlNodePtr parent, const char *name, ...)
 G_GNUC_NULL_TERMINATED;
+
+/*!
+ * \internal
+ * \brief Get the log level of the out structure.
+ *
+ * \param[in]      out          The output functions structure.
+ */
+int
+pcmk__output_get_log_level(pcmk__output_t *out);
+
+/*!
+ * \internal
+ * \brief Set the log level for the out structure.
+ *
+ * \param[in, out] out          The output functions structure.
+ * \param[in]      log_level    The log level.
+ */
+void
+pcmk__output_set_log_level(pcmk__output_t *out, int log_level);
+
+/*!
+ * \internal
+ * \brief Set the filename, funstion and line number
+ *        where the log was called
+ *
+ * \param[in, out] out          The output functions structure.
+ * \param[in]      filename     The file name.
+ * \param[in]      function     The function.
+ * \param[in]      lineno       The line number.
+ */
+void
+pcmk__output_set_file_func_line(pcmk__output_t *out, const char *filename,
+                                const char *function, uint32_t lineno);
+
+/*!
+ * \internal
+ * \brief A wrapper for do_crm_log. It should not be called directly.
+ *        Use the pcmk__output_do_crm_log macro instead.
+ *
+ * \param[in, out] out          The output functions structure.
+ * \param[in]      function     The name of the function from where it's called.
+ * \param[in]      filename     The name of the file from where it's called.
+ * \param[in]      format       The format of the message.
+ * \param[in]      lineno       The line number where pcmk__output_crm_log is called.
+ * \params[in]     ...          The arguments of the message.
+ */
+void
+pcmk__output_crm_log(pcmk__output_t *out, const char *format, ...);
 
 #ifdef __cplusplus
 }
