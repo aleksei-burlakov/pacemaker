@@ -101,22 +101,63 @@ pe__ticket_xml(pcmk__output_t *out, va_list args) {
     return 0;
 }
 
+static int
+pe__set_log_level_log(pcmk__output_t *out, va_list args) {
+    int log_level = va_arg(args, int);
+    pcmk__output_set_log_level(out, log_level);
+    return 0;
+}
+
+static int
+pe__get_log_level_log(pcmk__output_t *out, va_list args) {
+    /* It returns not the exit status, but the log_level */
+    return pcmk__output_get_log_level(out);
+}
+
+static int
+pe__set_file_func_line_log(pcmk__output_t *out, va_list args) {
+    const char *filename = va_arg(args, char *);
+    const char *function = va_arg(args, char *);
+    uint32_t lineno = va_arg(args, uint32_t);
+    pcmk__output_set_file_func_line(out, filename, function, lineno);
+    return 0;
+}
+
+// FIXME! Is there a better way to deal w/o pe__list_item_log
+static int
+pe__print_null_log(pcmk__output_t *out, va_list args) {
+    out->list_item(out, NULL, "<NULL>");
+    return 0;
+}
+
 static pcmk__message_entry_t fmt_functions[] = {
     { "bundle", "xml",  pe__bundle_xml },
     { "bundle", "html",  pe__bundle_html },
     { "bundle", "text",  pe__bundle_text },
+    { "bundle", "log",  pe__bundle_text },
     { "clone", "xml",  pe__clone_xml },
     { "clone", "html",  pe__clone_html },
     { "clone", "text",  pe__clone_text },
+    { "clone", "log",  pe__clone_text },
     { "group", "xml",  pe__group_xml },
     { "group", "html",  pe__group_html },
     { "group", "text",  pe__group_text },
+    { "group", "log",  pe__group_text },
     { "primitive", "xml",  pe__resource_xml },
     { "primitive", "html",  pe__resource_html },
     { "primitive", "text",  pe__resource_text },
+    { "primitive", "log",  pe__resource_text },
     { "ticket", "html", pe__ticket_html },
     { "ticket", "text", pe__ticket_text },
     { "ticket", "xml", pe__ticket_xml },
+    /* get_log_level, set_log_level, set_file_func_line
+     * and print_null are exclusively for the LOG format.
+     * Other formats may safely call those messages,
+     * there will be no effect. */
+    { "get_log_level", "log", pe__get_log_level_log },
+    { "set_log_level", "log", pe__set_log_level_log },
+    { "set_file_func_line", "log", pe__set_file_func_line_log },
+    { "print_null", "log", pe__print_null_log },
 
     { NULL, NULL, NULL }
 };
@@ -161,13 +202,21 @@ void
 pe__output_resource(int log_level, resource_t *rsc, gboolean details, pcmk__output_t  *out)
 {
     long options = pe_print_log | pe_print_pending;
+    int old_log_level = out->message(out, "get_log_level");
 
     if (rsc == NULL) {
-        do_crm_log(log_level - 1, "<NULL>");
+        out->message(out, "set_log_level", log_level - 1);
+        out->message(out, "set_file_func_line", __FILE__, __func__, __LINE__+1);
+        /* call list_item for LOG format only */
+        out->message(out, "print_null");
+        out->message(out, "set_log_level", old_log_level);
         return;
     }
     if (details) {
         options |= pe_print_details;
     }
+    out->message(out, "set_log_level", log_level);
+    out->message(out, "set_file_func_line", __FILE__, __func__, __LINE__+1);
     out->message(out, crm_element_name(rsc->xml), options, rsc);
+    out->message(out, "set_log_level", old_log_level);
 }
