@@ -64,6 +64,12 @@ extern gboolean determine_online_status(xmlNode * node_state, node_t * this_node
 	do_crm_log(LOG_WARNING, fmt, ##args);
 #  endif
 
+extern void
+status_printA(const char* filename, const char* function, long lineno
+	      , void* print_data, long options, const char* fmt, ...);
+#  define status_print(fmt, args...) \
+  status_printA(__FILE__, __func__, __LINE__, print_data, options, fmt, ##args)
+/*
 #  define status_print(fmt, args...)			\
 	if(options & pe_print_html) {			\
 		FILE *stream = print_data;		\
@@ -80,6 +86,7 @@ extern gboolean determine_online_status(xmlNode * node_state, node_t * this_node
 		int log_level = *(int*)print_data;	\
 		do_crm_log(log_level, fmt, ##args);	\
 	}
+*/
 
 // Some warnings we don't want to print every transition
 

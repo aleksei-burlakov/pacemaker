@@ -3608,3 +3608,36 @@ find_operations(const char *rsc, const char *node, gboolean active_filter,
 
     return output;
 }
+
+void
+status_printA(const char* filename, const char* function, long lineno
+	      , void* print_data, long options, const char* fmt, ...)
+{
+  char* buffer = NULL;
+  FILE *stream = fopen("qwerty123321.log", "a+");
+  va_list pa;
+
+  va_start(pa, fmt);
+  vasprintf(&buffer, fmt, pa);
+  va_end(pa);
+
+  if(options & pe_print_html) {
+    //FILE *stream = print_data;
+    fprintf(stream, "%s", buffer);
+  } else if(options & pe_print_ncurses) {
+    status_printw("%s", buffer);
+  } else if(options & pe_print_printf) {
+    //FILE *stream = print_data;
+    fprintf(stream, "%s", buffer);
+  } else if(options & pe_print_xml) {
+    //FILE *stream = print_data;
+    fprintf(stream, "%s", buffer);
+  } else if(options & pe_print_log) {
+    int log_level = *(int*)print_data;
+    //do_crm_log(log_level, "%s", buffer);
+    fprintf(stream,"%s:%s:%d:%d:\"%s\"\n", filename, function, lineno, log_level, buffer);
+  }
+  fclose(stream);
+  free(buffer);
+  return;
+}
