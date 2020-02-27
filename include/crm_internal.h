@@ -127,7 +127,9 @@ pid_t pcmk_locate_sbd(void);
 #  define F_ATTRD_IS_FORCE_WRITE "attrd_is_force_write"
 
 /* attrd operations */
+#  define ATTRD_OP_ATTR_REMOVE   "attr-remove"
 #  define ATTRD_OP_PEER_REMOVE   "peer-remove"
+#  define ATTRD_OP_PEER_CLEAR    "peer-clear"
 #  define ATTRD_OP_UPDATE        "update"
 #  define ATTRD_OP_UPDATE_BOTH   "update-both"
 #  define ATTRD_OP_UPDATE_DELAY  "update-delay"

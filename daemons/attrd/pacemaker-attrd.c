@@ -271,7 +271,12 @@ attrd_ipc_dispatch(qb_ipcs_connection_t * c, void *data, size_t size)
     if (safe_str_eq(op, ATTRD_OP_PEER_REMOVE)) {
         attrd_send_ack(client, id, flags);
         attrd_client_peer_remove(client->name, xml);
-
+	crm_err("DBGMSG: attrd_ipc_dispatch, ATTRD_OP_PEER_REMOVE, op=%s", op);
+    } else if (safe_str_eq(op, ATTRD_OP_PEER_CLEAR)) {
+        // The same that for ATTRD_OP_PEER_REMOVE
+        attrd_send_ack(client, id, flags);
+        attrd_client_peer_remove(client->name, xml);
+	crm_err("DBGMSG: attrd_ipc_dispatch, ATTRD_OP_PEER_CLEAR, op=%s", op);
     } else if (safe_str_eq(op, ATTRD_OP_CLEAR_FAILURE)) {
         attrd_send_ack(client, id, flags);
         attrd_client_clear_failure(xml);

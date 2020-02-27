@@ -183,6 +183,11 @@ pcmk__node_attr_request(crm_ipc_t *ipc, char command, const char *host,
             task = ATTRD_OP_QUERY;
             name_as = F_ATTRD_ATTRIBUTE;
             break;
+	case 'c':
+            task = ATTRD_OP_PEER_CLEAR;
+            display_command = "clear";
+	    crm_err("DGBMSG: crm_err: pcmk__node_attr_request");
+            break;
         case 'C':
             task = ATTRD_OP_PEER_REMOVE;
             display_command = "purge";
