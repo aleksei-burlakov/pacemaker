@@ -271,7 +271,9 @@ attrd_ipc_dispatch(qb_ipcs_connection_t * c, void *data, size_t size)
     if (safe_str_eq(op, ATTRD_OP_PEER_REMOVE)) {
         attrd_send_ack(client, id, flags);
         attrd_client_peer_remove(client->name, xml);
-
+    } else if (safe_str_eq(op, ATTRD_OP_PEER_CLEAR)) {
+        attrd_send_ack(client, id, flags);
+        attrd_client_peer_remove(client->name, xml);
     } else if (safe_str_eq(op, ATTRD_OP_CLEAR_FAILURE)) {
         attrd_send_ack(client, id, flags);
         attrd_client_clear_failure(xml);
