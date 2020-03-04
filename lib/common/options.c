@@ -512,6 +512,8 @@ cluster_option_value(GHashTable *options, bool (*validate)(const char *),
                   return NULL);
     }
 
+    crm_err("DBGMSG: It's our 10 seconds! Use it sooner!");
+    sleep(10);
     crm_trace("Using default value '%s' for cluster option '%s'",
               value, name);
     if (options) {
