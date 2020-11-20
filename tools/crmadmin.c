@@ -236,10 +236,12 @@ controller_event_cb(pcmk_ipc_api_t *controld_api,
             break;
 
         case cmd_whois_dc:
-            printf("Designated Controller is: %s\n", reply->host_from);
-            if (BE_SILENT && (reply->host_from != NULL)) {
-                fprintf(stderr, "%s\n", reply->host_from);
-            }
+	    if (reply->host_from != NULL) {
+	        if (BE_SILENT == FALSE) {
+	            printf("Designated Controller is: ");
+	        }
+	        fprintf(stderr, "%s\n", reply->host_from);
+	    }
             exit_code = CRM_EX_OK;
             break;
 
