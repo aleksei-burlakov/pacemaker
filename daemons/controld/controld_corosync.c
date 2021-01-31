@@ -59,6 +59,11 @@ crmd_cs_dispatch(cpg_handle_t handle, const struct cpg_name *groupName,
             crm_update_peer_proc(__FUNCTION__, peer, crm_proc_cpg,
                                  ONLINESTATUS);
         }
+	if (crm_str_eq(crm_element_value(xml, F_CRM_TASK), PCMK__CONTROLD_CMD_POKE, TRUE)) {
+	    crm_err("DBGMSG: POKE-HUI RECEIVED: %s[%d], from=%s", peer->uname, peer->id, from);
+	    return;
+	}
+
         crmd_ha_msg_filter(xml);
         free_xml(xml);
     } else {

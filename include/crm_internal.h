@@ -100,6 +100,10 @@ pid_t pcmk_locate_sbd(void);
 #define PCMK__XA_MODE                   "mode"
 #define PCMK__XA_TASK                   "task"
 
+/*
+ * XML controld names used only by internal code
+ */
+#define PCMK__CONTROLD_CMD_POKE         "poke"
 
 /*
  * IPC service names that are only used internally
