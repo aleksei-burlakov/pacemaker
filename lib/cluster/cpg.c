@@ -254,6 +254,7 @@ pcmk_message_common_cs(cpg_handle_t handle, uint32_t nodeid, uint32_t pid, void 
     char *data = NULL;
     AIS_Message *msg = (AIS_Message *) content;
 
+    //crm_err("DBGMSG: pcmk_message_common_cs enter");
     if(handle) {
         // Do filtering and field massaging
         uint32_t local_nodeid = get_local_nodeid(handle);
@@ -346,6 +347,7 @@ pcmk_message_common_cs(cpg_handle_t handle, uint32_t nodeid, uint32_t pid, void 
     crm_get_peer(msg->sender.id, msg->sender.uname);
 
     crm_trace("Payload: %.200s", data);
+    //crm_err("DBGMSG: pcmk_message_common_cs leave");
     return data;
 
   badmsg:

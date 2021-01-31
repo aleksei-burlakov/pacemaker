@@ -276,7 +276,7 @@ crm_is_peer_active(const crm_node_t * node)
     }
 
     if (is_set(node->flags, crm_remote_node)) {
-        /* remote nodes are never considered active members. This
+        /* remotew nodes are never considered active members. This
          * guarantees they will never be considered for DC membership.*/
         return FALSE;
     }
@@ -334,6 +334,7 @@ reap_crm_member(uint32_t id, const char *name)
     search.id = id;
     search.uname = name ? strdup(name) : NULL;
     matches = g_hash_table_foreach_remove(crm_peer_cache, crm_reap_dead_member, &search);
+    crm_err("DBGMSG: NAME REMOVED: %d: node->uname=%s, cache=%s", search.id, search.uname, crm_peers_names());
     if(matches) {
         crm_notice("Purged %d peer%s with id=%u%s%s from the membership cache",
                    matches, pcmk__plural_s(matches), search.id,
@@ -370,6 +371,24 @@ crm_active_peers(void)
         g_hash_table_foreach(crm_peer_cache, crm_count_peer, &count);
     }
     return count;
+}
+
+static char peers_names[150] = {0};
+
+const char*
+crm_peers_names(void)
+{
+    GHashTableIter iter;
+    crm_node_t *node = NULL;
+    char str[100] = {0};
+    g_hash_table_iter_init(&iter, crm_peer_cache);
+    memset(peers_names, 0, sizeof(peers_names));
+    while (g_hash_table_iter_next(&iter, NULL, (gpointer *) & node)) {
+      sprintf(str, "%d:%s;", node->id, node->uname);
+      strcat((char*)peers_names, str);
+    }
+    
+    return (const char*)peers_names;
 }
 
 static void
@@ -655,6 +674,7 @@ crm_get_peer(unsigned int id, const char *uname)
     crm_node_t *node = NULL;
     char *uname_lookup = NULL;
 
+    //crm_err("DBGMSG: crm_get_peer enter");
     CRM_ASSERT(id > 0 || uname != NULL);
 
     crm_peer_init();
@@ -697,6 +717,8 @@ crm_get_peer(unsigned int id, const char *uname)
         node->id = id;
     }
 
+    crm_err("DBGMSG: NAME INSERTED: %d: node->uname=%s, cache=%s", node->id, node->uname, crm_peers_names());
+
     if (uname && (node->uname == NULL)) {
         crm_update_peer_uname(node, uname);
     }
@@ -713,7 +735,7 @@ crm_get_peer(unsigned int id, const char *uname)
     }
 
     free(uname_lookup);
-
+    //crm_err("DBGMSG: crm_get_peer leave");
     return node;
 }
 
@@ -763,6 +785,7 @@ crm_update_peer_uname(crm_node_t *node, const char *uname)
         crm_remove_conflicting_peer(node);
     }
 #endif
+    crm_err("DBGMSG: NAME UPDATED: %d: node->uname=%s, cache=%s", node->id, node->uname, crm_peers_names());
 }
 
 /*!

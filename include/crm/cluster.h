@@ -135,6 +135,7 @@ crm_node_t *crm_get_peer_full(unsigned int id, const char *uname, int flags);
 crm_node_t *crm_get_peer(unsigned int id, const char *uname);
 
 guint crm_active_peers(void);
+const char* crm_peers_names(void);
 gboolean crm_is_peer_active(const crm_node_t * node);
 guint reap_crm_member(uint32_t id, const char *name);
 int crm_terminate_member(int nodeid, const char *uname, void *unused);

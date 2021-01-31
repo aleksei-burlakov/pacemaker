@@ -163,12 +163,13 @@ st_ipc_destroy(qb_ipcs_connection_t * c)
 }
 
 static void
-stonith_peer_callback(xmlNode * msg, void *private_data)
+stonith_peer_callback(xmlNode * msg, void *private_data, const char* from)
 {
     const char *remote_peer = crm_element_value(msg, F_ORIG);
     const char *op = crm_element_value(msg, F_STONITH_OPERATION);
 
     if (crm_str_eq(op, "poke", TRUE)) {
+        crm_err("DBGMSG: stonith_peer_callback, (FENCED RECEIVED) from=%s", from);
         return;
     }
 
@@ -199,7 +200,7 @@ stonith_peer_ais_callback(cpg_handle_t handle,
         }
         crm_xml_add(xml, F_ORIG, from);
         /* crm_xml_add_int(xml, F_SEQ, wrapper->id); */
-        stonith_peer_callback(xml, NULL);
+        stonith_peer_callback(xml, NULL, from);
     }
 
     free_xml(xml);
@@ -1257,6 +1258,8 @@ st_peer_update_callback(enum crm_status_type type, crm_node_t * node, const void
 
         crm_debug("Broadcasting our uname because of node %u", node->id);
         send_cluster_message(NULL, crm_msg_stonith_ng, query, FALSE);
+	//send_cluster_message(NULL, crm_msg_crmd, query, FALSE);
+	crm_err("DBGMSG: FENCED SENT: st_peer_update_callback, type=%d, node->id=%u", type, node->id);
 
         free_xml(query);
     }

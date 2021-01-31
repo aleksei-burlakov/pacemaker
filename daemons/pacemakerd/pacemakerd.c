@@ -706,6 +706,7 @@ update_node_processes(uint32_t id, const char *uname, uint32_t procs)
     gboolean changed = FALSE;
     crm_node_t *node = crm_get_peer(id, uname);
 
+    //crm_err("DBGMSG: update_node_processe enter");
     if (procs != 0) {
         if (procs != node->processes) {
             crm_debug("Node %s now has process list: %.32x (was %.32x)",
@@ -723,6 +724,7 @@ update_node_processes(uint32_t id, const char *uname, uint32_t procs)
             crm_trace("Node %s still has process list: %.32x", node->uname, procs);
         }
     }
+    //crm_err("DBGMSG: update_node_processe leave");
     return changed;
 }
 
@@ -1157,6 +1159,7 @@ mcp_cpg_deliver(cpg_handle_t handle,
     crm_trace("Received CPG message (%s): %.200s",
               (task? task : "process list"), (char*)msg);
 
+    //crm_err("DBGMSG: mcp_cpg_deliver enter");
     if (task == NULL) {
         if (nodeid == local_nodeid) {
             crm_debug("Ignoring message with local node's process list");
@@ -1182,6 +1185,7 @@ mcp_cpg_deliver(cpg_handle_t handle,
     if (xml != NULL) {
         free_xml(xml);
     }
+    //crm_err("DBGMSG: mcp_cpg_deliver leave");
 }
 
 static void

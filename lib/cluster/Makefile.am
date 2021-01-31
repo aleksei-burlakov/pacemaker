@@ -13,7 +13,7 @@ lib_LTLIBRARIES	= libcrmcluster.la
 
 libcrmcluster_la_LDFLAGS = -version-info 29:4:0
 
-libcrmcluster_la_CFLAGS  = $(CFLAGS_HARDENED_LIB)
+libcrmcluster_la_CFLAGS  = $(CFLAGS_HARDENED_LIB) -g -O0
 libcrmcluster_la_LDFLAGS += $(LDFLAGS_HARDENED_LIB)
 
 libcrmcluster_la_LIBADD  = $(top_builddir)/lib/common/libcrmcommon.la $(top_builddir)/lib/fencing/libstonithd.la $(CLUSTERLIBS)

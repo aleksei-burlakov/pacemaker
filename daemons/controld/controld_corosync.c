@@ -36,6 +36,7 @@ crmd_cs_dispatch(cpg_handle_t handle, const struct cpg_name *groupName,
     if(data == NULL) {
         return;
     }
+    //crm_err("DBGMSG: crmd_cs_dispatch enter");
     if (kind == crm_class_cluster) {
         crm_node_t *peer = NULL;
         xmlNode *xml = string2xml(data);
@@ -59,12 +60,24 @@ crmd_cs_dispatch(cpg_handle_t handle, const struct cpg_name *groupName,
             crm_update_peer_proc(__FUNCTION__, peer, crm_proc_cpg,
                                  ONLINESTATUS);
         }
+
+	if (crm_str_eq(crm_element_value(xml, T_CRM_OPERATION), "poke", TRUE)) {
+	    crm_err("DBGMSG: crmd_cs_dispatch, (CONTROLD RECEIVED from CRMD) from %s", from);
+	    return;
+	}
+
+	if (crm_str_eq(crm_element_value(xml, "st_op"), "poke", TRUE)) {
+	    crm_err("DBGMSG: crmd_cs_dispatch, (CONTROLD RECEIVED from FENCED) from %s", from);
+	    return;
+	}
+
         crmd_ha_msg_filter(xml);
         free_xml(xml);
     } else {
         crm_err("Invalid message class (%d): %.100s", kind, data);
     }
     free(data);
+    //crm_err("DBGMSG: crmd_cs_dispatch leave");
 }
 
 static gboolean
