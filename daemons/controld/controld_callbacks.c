@@ -118,6 +118,26 @@ peer_update_callback(enum crm_status_type type, crm_node_t * node, const void *d
         return;
     }
 
+    if ((type != crm_status_processes) && !is_remote) {
+        /*
+         * This is a hack until we can send to a nodeid and/or we fix node name lookups
+         * These messages are ignored in crmd_ha_msg_filter()
+         */
+
+        xmlNode *query = create_xml_node(NULL, __FUNCTION__);
+        crm_xml_add(query, F_TYPE, T_CRM);
+        crm_xml_add(query, T_CRM_OPERATION, "poke");
+
+        crm_debug("Broadcasting our uname because of node %u", node->id);
+        // lets highlight the message in red:)
+        crm_err("DBGMSG: POKE SENT: type=%d, node->id=%u", type, node->id);
+        send_cluster_message(NULL, crm_msg_crmd, query, FALSE);
+        // let's send it twice. Once for all and once for the node explicitelly
+        send_cluster_message(node, crm_msg_crmd, query, FALSE);
+
+        free_xml(query);
+    }
+
     switch (type) {
         case crm_status_uname:
             /* If we've never seen the node, then it also won't be in the status section */
