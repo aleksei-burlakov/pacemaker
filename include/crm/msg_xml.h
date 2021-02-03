@@ -42,6 +42,10 @@ extern "C" {
 #    define T_CRM     "crmd"
 #  endif
 
+#  ifndef T_CRM_OPERATION
+#    define T_CRM_OPERATION     "crm_op"
+#  endif
+
 #  ifndef T_ATTRD
 #    define T_ATTRD     "attrd"
 #  endif

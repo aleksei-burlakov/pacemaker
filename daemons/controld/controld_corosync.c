@@ -59,6 +59,11 @@ crmd_cs_dispatch(cpg_handle_t handle, const struct cpg_name *groupName,
             crm_update_peer_proc(__func__, peer, crm_proc_cpg,
                                  ONLINESTATUS);
         }
+
+        if (pcmk__str_eq(crm_element_value(xml, T_CRM_OPERATION), "poke", TRUE)) {
+	    return;
+        }
+
         crmd_ha_msg_filter(xml);
         free_xml(xml);
     } else {

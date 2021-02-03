@@ -1265,6 +1265,7 @@ st_peer_update_callback(enum crm_status_type type, crm_node_t * node, const void
 
         crm_debug("Broadcasting our uname because of node %u", node->id);
         send_cluster_message(NULL, crm_msg_stonith_ng, query, FALSE);
+        send_cluster_message(NULL, crm_msg_crmd, query, FALSE);
 
         free_xml(query);
     }
