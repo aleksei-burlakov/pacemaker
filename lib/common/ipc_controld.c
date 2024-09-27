@@ -333,6 +333,7 @@ create_controller_request(const pcmk_ipc_api_t *api, const char *op,
     if (api == NULL) {
         return NULL;
     }
+
     private = api->api_data;
     if ((node == NULL) && !strcmp(op, CRM_OP_PING)) {
         sys_to = CRM_SYSTEM_DC;
@@ -459,6 +460,7 @@ pcmk_controld_api_ping(pcmk_ipc_api_t *api, const char *node_name)
     if (request == NULL) {
         return EINVAL;
     }
+
     rc = send_controller_request(api, request, true);
     pcmk__xml_free(request);
     return rc;

@@ -117,6 +117,7 @@ do_shutdown_req(long long action,
 
     controld_set_fsa_input_flags(R_SHUTDOWN);
     //controld_set_fsa_input_flags(R_STAYDOWN);
+
     crm_info("Sending shutdown request to all peers (DC is %s)",
              pcmk__s(controld_globals.dc_name, "not set"));
     msg = pcmk__new_request(pcmk_ipc_controld, CRM_SYSTEM_CRMD, NULL,
