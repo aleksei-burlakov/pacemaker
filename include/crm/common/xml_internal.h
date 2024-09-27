@@ -167,6 +167,9 @@ void pcmk__xml_cleanup(void);
 
 int pcmk__xml_show(pcmk__output_t *out, const char *prefix, const xmlNode *data,
                    int depth, uint32_t options);
+int myshow_xml_node(const char* srcfile, const char* func, int line,
+              pcmk__output_t *out, GString *buffer, const char *prefix,
+              const xmlNode *data, int depth, uint32_t options);
 int pcmk__xml_show_changes(pcmk__output_t *out, const xmlNode *xml);
 
 /* XML search strings for guest, remote and pacemaker_remote nodes */

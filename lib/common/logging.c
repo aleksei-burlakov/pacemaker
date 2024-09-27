@@ -1048,6 +1048,66 @@ crm_log_init(const char *entity, uint8_t level, gboolean daemon, gboolean to_std
     return TRUE;
 }
 
+void
+mylog_fn(const char* srcfile, const char* func, int line, const char* fmt, ...)
+{
+    va_list ap;
+    char* buffer = NULL;
+    FILE *file;
+    pid_t pid = getpid();
+    time_t rawtime;
+    struct tm * timeinfo;
+
+    char logfile[265];
+    sprintf(logfile, "/var/lib/heartbeat/cores/hacluster/%s.txt", program_invocation_short_name);
+
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+
+    va_start( ap, fmt );
+    vasprintf(&buffer, fmt, ap);
+    va_end( ap );
+
+    file = fopen(logfile, "a");
+    fprintf(file, "%02d:%02d:%02d, %s(%d), %s:%s:%d, MSG:%s\n",
+        timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
+        program_invocation_name, pid, srcfile, func, line, buffer);
+    fclose(file);
+}
+
+void
+mylog_xml_fn(const char* srcfile, const char* func, int line, const char* text, const xmlNode *xml)
+{
+    GString *buffer = NULL;
+    if (xml == NULL) {
+        mylog_fn(srcfile, func, line,
+            "%s%sNo data to dump as XML",
+                   pcmk__s(text, ""), pcmk__str_empty(text)? "" : " ");
+
+    } else {
+        if (logger_out == NULL) {
+            CRM_CHECK(pcmk__log_output_new(&logger_out) == pcmk_rc_ok, return);
+        }
+
+        //pcmk__output_set_log_level(logger_out, level);
+        pcmk__output_set_log_level(logger_out, LOG_WARNING);
+        pcmk__output_set_log_filter(logger_out, srcfile, func, line, 0);
+
+        CRM_LOG_ASSERT(logger_out != NULL);
+
+        /* Allocate a buffer once, for show_xml_node() to truncate and reuse in
+        * recursive calls
+        */
+        buffer = g_string_sized_new(1024);
+        myshow_xml_node(srcfile, func, line, logger_out, buffer, text, xml, 1, pcmk__xml_fmt_pretty
+                       |pcmk__xml_fmt_open
+                       |pcmk__xml_fmt_children
+                       |pcmk__xml_fmt_close);
+
+        g_string_free(buffer, TRUE);
+    }
+}
+
 /* returns the old value */
 unsigned int
 set_crm_log_level(unsigned int level)

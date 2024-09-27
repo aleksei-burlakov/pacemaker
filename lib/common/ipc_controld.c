@@ -262,6 +262,8 @@ dispatch(pcmk_ipc_api_t *api, xmlNode *reply)
     wrapper = pcmk__xe_first_child(reply, PCMK__XE_CRM_XML, NULL, NULL);
     msg_data = pcmk__xe_first_child(wrapper, NULL, NULL, NULL);
 
+    mylog("value=%s", value);
+    mylog("hello", reply);
     if (!strcmp(value, CRM_OP_REPROBE)) {
         reply_data.reply_type = pcmk_controld_reply_reprobe;
 
