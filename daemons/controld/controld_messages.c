@@ -26,11 +26,12 @@ extern void crm_shutdown(int nsig);
 
 static enum crmd_fsa_input handle_message(xmlNode *msg,
                                           enum crmd_fsa_cause cause);
+static xmlNode* create_ping_reply(const xmlNode *msg);
 static void handle_response(xmlNode *stored_msg);
 static enum crmd_fsa_input handle_request(xmlNode *stored_msg,
                                           enum crmd_fsa_cause cause);
 static enum crmd_fsa_input handle_shutdown_request(xmlNode *stored_msg);
-static void send_msg_via_ipc(xmlNode * msg, const char *sys);
+static void send_msg_via_ipc(xmlNode * msg, const char *sys, const char *src);
 
 /* debug only, can wrap all it likes */
 static int last_data_id = 0;
@@ -436,6 +437,18 @@ relay_message(xmlNode * msg, gboolean originated_locally)
         }
     }
 
+    // If the DC is not yet selected
+    if ((strcmp(task, CRM_OP_PING) == 0) && (controld_globals.dc_name == NULL)) {
+        if (is_for_dc) {
+            xmlNode *reply = create_ping_reply(msg);
+            sys_to = crm_element_value(reply, F_CRM_SYS_TO);
+            // Explicitly leave src empty. It indicates that dc is "not yet selected"
+            send_msg_via_ipc(reply, sys_to, NULL /* explicitly leave src empty */);
+            free_xml(reply);
+            return TRUE;
+        }
+    }
+
     // Check whether message should be relayed
 
     if (is_for_dc || is_for_dcib || is_for_te) {
@@ -444,9 +457,11 @@ relay_message(xmlNode * msg, gboolean originated_locally)
                 crm_trace("Route message %s locally as transition request",
                           ref);
                 crm_log_xml_trace(msg, sys_to);
-                send_msg_via_ipc(msg, sys_to);
+                send_msg_via_ipc(msg, sys_to, controld_globals.our_nodename);
+
                 return TRUE; // No further processing of message is needed
             }
+
             crm_trace("Route message %s locally as DC request", ref);
             return FALSE; // More to be done by caller
         }
@@ -479,7 +494,7 @@ relay_message(xmlNode * msg, gboolean originated_locally)
         }
         crm_trace("Relay message %s locally to %s", ref, sys_to);
         crm_log_xml_trace(msg, "IPC-relay");
-        send_msg_via_ipc(msg, sys_to);
+        send_msg_via_ipc(msg, sys_to, controld_globals.our_nodename);
         return TRUE;
     }
 
@@ -793,8 +808,8 @@ handle_remote_state(const xmlNode *msg)
  *
  * \return Next FSA input
  */
-static enum crmd_fsa_input
-handle_ping(const xmlNode *msg)
+static xmlNode*
+create_ping_reply(const xmlNode *msg)
 {
     const char *value = NULL;
     xmlNode *ping = NULL;
@@ -815,9 +830,15 @@ handle_ping(const xmlNode *msg)
     // @TODO maybe do some checks to determine meaningful status
     crm_xml_add(ping, XML_PING_ATTR_STATUS, "ok");
 
-    // Send reply
     reply = create_reply(msg, ping);
     free_xml(ping);
+    return reply;
+}
+
+static enum crmd_fsa_input
+handle_ping(const xmlNode *msg)
+{
+    xmlNode *reply = create_ping_reply(msg);
     if (reply != NULL) {
         (void) relay_message(reply, TRUE);
         free_xml(reply);
@@ -1056,6 +1077,7 @@ handle_request(xmlNode *stored_msg, enum crmd_fsa_cause cause)
         }
     }
 
+
     /*========== common actions ==========*/
     if (strcmp(op, CRM_OP_NOVOTE) == 0) {
         ha_msg_input_t fsa_input;
@@ -1250,7 +1272,7 @@ handle_shutdown_request(xmlNode * stored_msg)
 }
 
 static void
-send_msg_via_ipc(xmlNode * msg, const char *sys)
+send_msg_via_ipc(xmlNode * msg, const char *sys, const char *src)
 {
     pcmk__client_t *client_channel = NULL;
 
@@ -1259,7 +1281,7 @@ send_msg_via_ipc(xmlNode * msg, const char *sys)
     client_channel = pcmk__find_client_by_id(sys);
 
     if (crm_element_value(msg, F_CRM_HOST_FROM) == NULL) {
-        crm_xml_add(msg, F_CRM_HOST_FROM, controld_globals.our_nodename);
+        crm_xml_add(msg, F_CRM_HOST_FROM, src);
     }
 
     if (client_channel != NULL) {
