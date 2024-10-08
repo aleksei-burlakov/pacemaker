@@ -436,6 +436,35 @@ relay_message(xmlNode * msg, gboolean originated_locally)
         }
     }
 
+    if ((strcmp(task, CRM_OP_PING) == 0) && (controld_globals.dc_name == NULL)) {
+        if (is_for_dc) {
+            return FALSE; // need to handle it in the handle_ping
+        }
+        if (is_local) {
+            /* TODO: in the msg we say, the DC is node1.
+             * However, we should say it's unknown
+             */
+/* BEFORE SENDING: It has no attribute src
+<create_reply_adv origin="handle_ping" t="crmd" version="3.19.0"
+  subt="response" reference="ping-crmadmin-1728314772-1" crm_task="ping"
+  crm_sys_to="2a630c22-153f-4947-bdc8-75dd36ace091" crm_sys_from="dc">
+    <crm_xml>
+        <ping_response crm_subsystem="dc" crmd_state="S_PENDING" result="ok"/>
+    </crm_xml>
+</create_reply_adv>*/
+            send_msg_via_ipc(msg, sys_to);
+/* BEFORE SENDING: It has an attribute src="node1"
+<create_reply_adv origin="handle_ping" t="crmd" version="3.19.0"
+  subt="response" reference="ping-crmadmin-1728314772-1" crm_task="ping"
+  crm_sys_to="2a630c22-153f-4947-bdc8-75dd36ace091" crm_sys_from="dc" src="node1">
+    <crm_xml>
+        <ping_response crm_subsystem="dc" crmd_state="S_PENDING" result="ok"/>
+    </crm_xml>
+</create_reply_adv>*/
+            return TRUE;
+        }
+    }
+
     // Check whether message should be relayed
 
     if (is_for_dc || is_for_dcib || is_for_te) {
