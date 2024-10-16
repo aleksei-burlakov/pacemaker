@@ -677,6 +677,17 @@ pcmk__send_ipc_request(pcmk_ipc_api_t *api, const xmlNode *request)
     // The 0 here means a default timeout of 5 seconds
     rc = crm_ipc_send(api->ipc, request, flags, 0, &reply);
 
+    /* It's what we will receive in the pacemaker-controld in relay_message
+       <message origin="create_controller_request" t="crmd" subt="request"
+        version="3.19.7" reference="ping-388041_crmadmin-1729080742-1"
+        crm_sys_from="388041_crmadmin" crm_sys_to="dc" crm_task="ping"/>  */
+    mylog_xml("request", request);
+    /* It's what generated in the pacemaker-controld in dispatch_controller_ipc
+      <ack function="dispatch_controller_ipc" line="393" status="112"/>  */
+    mylog_xml("reply", reply);
+    // <ack function="dispatch_controller_ipc" line="393" status="112"/>
+    mylog("also reply: %s", crm_ipc_buffer(api->ipc));
+
     if (rc < 0) {
         return pcmk_legacy2rc(rc);
     } else if (rc == 0) {
@@ -686,6 +697,8 @@ pcmk__send_ipc_request(pcmk_ipc_api_t *api, const xmlNode *request)
     // With synchronous dispatch, we dispatch any reply now
     if (reply != NULL) {
         bool more = call_api_dispatch(api, reply);
+        // <ack function="dispatch_controller_ipc" line="393" status="112"/>
+        mylog_xml("reply2", reply);
 
         pcmk__xml_free(reply);
 
@@ -700,6 +713,16 @@ pcmk__send_ipc_request(pcmk_ipc_api_t *api, const xmlNode *request)
                 return -rc;
             }
 
+            /* It's what generated in the pacemaker-controld in relay_message
+               <message origin="create_ping_reply" t="crmd" subt="response"
+                version="3.19.7" reference="ping-388041_crmadmin-1729080742-1"
+                crm_sys_from="dc" crm_sys_to="88d43af9-11ee-421d-bd98-f93c64916e04"
+                crm_task="ping">
+                    <crm_xml>
+                        <ping_response crm_subsystem="dc" crmd_state="S_PENDING" result="ok"/>
+                    </crm_xml>
+                </message>  */
+            mylog("reply3: %s", crm_ipc_buffer(api->ipc));
             rc = dispatch_ipc_data(crm_ipc_buffer(api->ipc), api);
 
             if (rc == pcmk_rc_ok) {

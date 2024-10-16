@@ -170,6 +170,87 @@ show_xml_element(pcmk__output_t *out, GString *buffer, const char *prefix,
     return rc;
 }
 
+static int
+myshow_xml_element(const char* srcfile, const char* func, int line,
+                 pcmk__output_t *out, GString *buffer, const char *prefix,
+                 const xmlNode *data, int depth, uint32_t options)
+{
+    int spaces = pcmk_is_set(options, pcmk__xml_fmt_pretty)? (2 * depth) : 0;
+    int rc = pcmk_rc_no_output;
+
+    if (pcmk_is_set(options, pcmk__xml_fmt_open)) {
+        const char *hidden = crm_element_value(data, PCMK__XA_HIDDEN);
+
+        g_string_truncate(buffer, 0);
+
+        for (int lpc = 0; lpc < spaces; lpc++) {
+            g_string_append_c(buffer, ' ');
+        }
+        pcmk__g_strcat(buffer, "<", data->name, NULL);
+
+        for (const xmlAttr *attr = pcmk__xe_first_attr(data); attr != NULL;
+             attr = attr->next) {
+            xml_node_private_t *nodepriv = attr->_private;
+            const char *p_name = (const char *) attr->name;
+            const char *p_value = pcmk__xml_attr_value(attr);
+            gchar *p_copy = NULL;
+
+            if (pcmk_is_set(nodepriv->flags, pcmk__xf_deleted)) {
+                continue;
+            }
+
+            if ((hidden != NULL) && (p_name[0] != '\0')
+                && (strstr(hidden, p_name) != NULL)) {
+
+                p_value = "*****";
+
+            } else {
+                p_copy = pcmk__xml_escape(p_value, true);
+                p_value = p_copy;
+            }
+
+            pcmk__g_strcat(buffer, " ", p_name, "=\"",
+                           pcmk__s(p_value, "<null>"), "\"", NULL);
+            g_free(p_copy);
+        }
+
+        if ((data->children != NULL)
+            && pcmk_is_set(options, pcmk__xml_fmt_children)) {
+            g_string_append_c(buffer, '>');
+
+        } else {
+            g_string_append(buffer, "/>");
+        }
+
+        mylog_fn(srcfile, func, line, "%s%s%s", pcmk__s(prefix, ""),
+            pcmk__str_empty(prefix)? "" : " ", buffer->str);
+        rc = 0;
+    }
+
+    if (data->children == NULL) {
+        return rc;
+    }
+
+    if (pcmk_is_set(options, pcmk__xml_fmt_children)) {
+        for (const xmlNode *child = pcmk__xml_first_child(data); child != NULL;
+             child = pcmk__xml_next(child)) {
+
+            int temp_rc = myshow_xml_node(srcfile, func, line,
+                                        out, buffer, prefix, child, depth + 1,
+                                        options | pcmk__xml_fmt_open | pcmk__xml_fmt_close);
+            rc = pcmk__output_select_rc(rc, temp_rc);
+        }
+    }
+
+    if (pcmk_is_set(options, pcmk__xml_fmt_close)) {
+        mylog_fn(srcfile, func, line, "%s%s%*s</%s>", pcmk__s(prefix, ""),
+            pcmk__str_empty(prefix)? "" : " ", spaces, "", data->name);
+        rc = pcmk__output_select_rc(rc, 0);
+    }
+
+    return rc;
+}
+
 /*!
  * \internal
  * \brief Output an XML element or comment in a formatted way
@@ -198,6 +279,22 @@ show_xml_node(pcmk__output_t *out, GString *buffer, const char *prefix,
             return show_xml_comment(out, data, depth, options);
         case XML_ELEMENT_NODE:
             return show_xml_element(out, buffer, prefix, data, depth, options);
+        default:
+            return pcmk_rc_no_output;
+    }
+}
+
+// the same as show_xml_node, but external
+int
+myshow_xml_node(const char* srcfile, const char* func, int line,
+              pcmk__output_t *out, GString *buffer, const char *prefix,
+              const xmlNode *data, int depth, uint32_t options)
+{
+    switch (data->type) {
+        case XML_COMMENT_NODE:
+            return show_xml_comment(out, data, depth, options);
+        case XML_ELEMENT_NODE:
+            return myshow_xml_element(srcfile, func, line, out, buffer, prefix, data, depth, options);
         default:
             return pcmk_rc_no_output;
     }

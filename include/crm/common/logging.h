@@ -89,6 +89,9 @@ void crm_enable_stderr(int enable);
 
 gboolean crm_is_callsite_active(struct qb_log_callsite *cs, uint8_t level, uint32_t tags);
 
+void mylog_fn(const char* srcfile, const char* func, int line, const char* fmt, ...);
+void mylog_xml_fn(const char* srcfile, const char* func, int line, const char* text, const xmlNode *xml);
+
 // NOTE: sbd (as of at least 1.5.2) uses this
 /* returns the old value */
 unsigned int set_crm_log_level(unsigned int level);
@@ -134,6 +137,9 @@ pcmk__clip_log_level(int level)
     }
     return level;
 }
+
+#define mylog(fmt, ...) mylog_fn(__FILE__, __func__, __LINE__, fmt, ## __VA_ARGS__)
+#define mylog_xml(text, xml) mylog_xml_fn(__FILE__, __func__, __LINE__, text, xml)
 
 /* Using "switch" instead of "if" in these macro definitions keeps
  * static analysis from complaining about constant evaluations
